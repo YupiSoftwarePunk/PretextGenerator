@@ -402,7 +402,7 @@ export const PlaygroundArena: React.FC = () => {
       </div>
 
       {/* Main Grid: Controls Panel + Interactive Arena */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch-">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         {/* Left Side: Control Controls Panel (4 Cols) */}
         <div className="lg:col-span-4 glass-card h-full flex flex-col rounded-2xl p-6 border border-white/10 space-y-6">
           {/* Presets Selection */}
@@ -527,7 +527,7 @@ export const PlaygroundArena: React.FC = () => {
           </div>
 
           {/* Mode Switch: Canvas 120 FPS vs DOM */}
-          <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+          <div className="pt-4 border-t border-white/10 flex items-center justify-between mt-auto">
             <span className="text-xs font-mono text-zinc-400">Режим рендеринга:</span>
             <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
               <button
@@ -558,7 +558,7 @@ export const PlaygroundArena: React.FC = () => {
         <div className="lg:col-span-8 flex flex-col gap-4 h-full">
           <div
             ref={containerRef}
-            className="relative w-full border border-violet-500/30 rounded-3xl p-6 sm:p-8 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_0_50px_rgba(139,92,246,0.15)] overflow-hidden"
+            className="relative w-full h-full flex flex-col border border-violet-500/30 rounded-3xl p-6 sm:p-8 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_0_50px_rgba(139,92,246,0.15)] overflow-hidden"
           >
             {/* Top Arena Header & HUD */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
@@ -592,7 +592,7 @@ export const PlaygroundArena: React.FC = () => {
 
             {/* Rendering Canvas / DOM Arena */}
             {renderMode === 'canvas' ? (
-              <div className="relative w-full h-[390px] rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing bg-zinc-900/40 border border-white/5">
+              <div className="relative w-full flex-1 min-h-[390px] rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing bg-zinc-900/40 border border-white/5">
                 <canvas
                   ref={canvasRef}
                   onPointerDown={handlePointerDown}
@@ -606,7 +606,7 @@ export const PlaygroundArena: React.FC = () => {
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
-                className="relative w-full min-h-[390px] h-[390px] rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing bg-zinc-900/40 border border-white/5 p-4 select-none touch-none"
+                className="relative w-full flex-1 min-h-[390px] rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing bg-zinc-900/40 border border-white/5 p-4 select-none touch-none"
               >
                 {/* DOM Obstacles */}
                 {obstacles.map((obs, idx) => (
