@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, LayoutGrid, FileText, ScrollText, Sparkles, Play } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, FileText, ScrollText, Sparkles, Eye, Download, Edit } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
-import { templates, getTemplatesByType } from '@/lib/templates';
+import { templates } from '@/lib/templates';
 import { generateId } from '@/lib/storage';
+import PreviewModal from '@/components/modals/PreviewModal';
+import ExportModal, { ExportOptions } from '@/components/modals/ExportModal';
+import PretextRenderer from '@/components/pretext/PretextRenderer';
 
 type FilterType = 'all' | DocumentType;
 
@@ -16,21 +19,69 @@ const filterOptions: { value: FilterType; label: string; icon: typeof LayoutGrid
   { value: 'cheatsheet', label: 'Шпаргалки', icon: ScrollText },
 ];
 
+interface PresetState {
+  [key: string]: {
+    title: string;
+    content: string;
+  };
+}
+
 export default function GalleryPage() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [presetStates, setPresetStates] = useState<PresetState>({});
+  const [expandedPreset, setExpandedPreset] = useState<string | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [exportTemplate, setExportTemplate] = useState<Template | null>(null);
 
   const filteredTemplates = activeFilter === 'all'
     ? templates
-    : getTemplatesByType(activeFilter);
+    : templates.filter(t => t.type === activeFilter);
 
-  const handleUseTemplate = (template: Template) => {
+  const getPresetState = (templateId: string) => {
+    return presetStates[templateId] || {
+      title: templates.find(t => t.id === templateId)?.name || '',
+      content: templates.find(t => t.id === templateId)?.content || '',
+    };
+  };
+
+  const updatePresetState = (templateId: string, updates: Partial<{ title: string; content: string }>) => {
+    setPresetStates(prev => ({
+      ...prev,
+      [templateId]: {
+        ...getPresetState(templateId),
+        ...updates,
+      },
+    }));
+  };
+
+  const handlePreview = (template: Template) => {
+    setPreviewTemplate(template);
+  };
+
+  const handleExport = (template: Template) => {
+    setExportTemplate(template);
+  };
+
+  const handleExportConfirm = async (options: ExportOptions) => {
+    if (!exportTemplate) return;
+
+    const state = getPresetState(exportTemplate.id);
+    console.log('Exporting:', { template: exportTemplate.name, options, state });
+
+    // TODO: Implement actual export logic with html2canvas/jsPDF
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    alert(`Экспорт в ${options.format.toUpperCase()} выполнен!`);
+  };
+
+  const handleOpenInEditor = (template: Template) => {
+    const state = getPresetState(template.id);
     const docId = generateId();
     const newDoc = {
       id: docId,
       type: template.type,
-      title: template.name,
-      content: template.content,
+      title: state.title,
+      content: state.content,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       templateId: template.id,
@@ -46,10 +97,8 @@ export default function GalleryPage() {
 
   return (
     <div className="min-h-screen bg-[#09090B] relative overflow-hidden">
-      {/* Радиальное свечение */}
+      {/* Background effects */}
       <div className="absolute inset-0 radial-glow pointer-events-none" />
-
-      {/* Тонкая сетка */}
       <div className="absolute inset-0 opacity-[0.02]" style={{
         backgroundImage: `linear-gradient(rgba(139, 92, 246, 0.5) 1px, transparent 1px),
                          linear-gradient(90deg, rgba(139, 92, 246, 0.5) 1px, transparent 1px)`,
@@ -78,9 +127,9 @@ export default function GalleryPage() {
 
               <div>
                 <h1 className="text-2xl font-bold gradient-text">
-                  Галерея шаблонов
+                  Интерактивные пресеты
                 </h1>
-                <p className="text-zinc-400 text-sm">Выберите шаблон для быстрого старта</p>
+                <p className="text-zinc-400 text-sm">Настройте и экспортируйте контент</p>
               </div>
             </div>
           </div>
@@ -93,6 +142,7 @@ export default function GalleryPage() {
             {filterOptions.map((option) => {
               const Icon = option.icon;
               const isActive = activeFilter === option.value;
+              const count = option.value === 'all' ? templates.length : templates.filter(t => t.type === option.value).length;
 
               return (
                 <button
@@ -116,7 +166,7 @@ export default function GalleryPage() {
                     text-xs px-2 py-0.5 rounded-full
                     ${isActive ? 'bg-violet-500/30 text-violet-200' : 'bg-white/10 text-zinc-400'}
                   `}>
-                    {option.value === 'all' ? templates.length : getTemplatesByType(option.value).length}
+                    {count}
                   </span>
                 </button>
               );
@@ -124,81 +174,135 @@ export default function GalleryPage() {
           </div>
 
           {/* Templates grid */}
-          {filteredTemplates.length === 0 ? (
-            <div className="glass-card rounded-2xl p-12 text-center">
-              <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-              <p className="text-zinc-400">Шаблоны не найдены</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTemplates.map((template, index) => (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredTemplates.map((template) => {
+              const state = getPresetState(template.id);
+              const isExpanded = expandedPreset === template.id;
+
+              return (
                 <div
                   key={template.id}
-                  className="group glass-card glass-card-hover rounded-2xl p-6
-                    hover:shadow-[0_0_30px_rgba(139,92,246,0.2)]"
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  className="glass-card rounded-2xl p-6 hover:shadow-[0_0_30px_rgba(139,92,246,0.2)] transition-all duration-300"
                 >
-                  {/* Preview thumbnail placeholder */}
-                  <div className="relative w-full aspect-video rounded-lg mb-4 overflow-hidden
-                    bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border border-white/5">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {template.type === 'slide' && <LayoutGrid className="w-12 h-12 text-zinc-700" />}
-                      {template.type === 'card' && <FileText className="w-12 h-12 text-zinc-700" />}
-                      {template.type === 'cheatsheet' && <ScrollText className="w-12 h-12 text-zinc-700" />}
+                  {/* Header with type badge */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
+                        bg-white/5 border border-white/10 mb-2">
+                        {template.type === 'slide' && <LayoutGrid className="w-3.5 h-3.5 text-violet-400" />}
+                        {template.type === 'card' && <FileText className="w-3.5 h-3.5 text-cyan-400" />}
+                        {template.type === 'cheatsheet' && <ScrollText className="w-3.5 h-3.5 text-pink-400" />}
+                        <span className="text-xs text-zinc-400 font-medium capitalize">
+                          {template.type === 'slide' && 'Слайд'}
+                          {template.type === 'card' && 'Карточка'}
+                          {template.type === 'cheatsheet' && 'Шпаргалка'}
+                        </span>
+                      </div>
+
+                      <h3 className="text-xl font-bold text-white mb-1">
+                        {template.name}
+                      </h3>
+                      <p className="text-sm text-zinc-400">
+                        {template.description}
+                      </p>
                     </div>
 
-                    {/* Preview overlay on hover */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100
-                      transition-opacity duration-300 flex items-center justify-center">
-                      <div className="text-center space-y-2">
-                        <Play className="w-8 h-8 text-white mx-auto" />
-                        <p className="text-sm text-zinc-300">Предпросмотр</p>
+                    <button
+                      onClick={() => setExpandedPreset(isExpanded ? null : template.id)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10
+                        hover:border-violet-500/30 transition-all"
+                      title={isExpanded ? 'Свернуть' : 'Редактировать'}
+                    >
+                      <Edit className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  </div>
+
+                  {/* Inline editor (collapsible) */}
+                  {isExpanded && (
+                    <div className="space-y-3 mb-4 pb-4 border-b border-white/10">
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                          Заголовок
+                        </label>
+                        <input
+                          type="text"
+                          value={state.title}
+                          onChange={(e) => updatePresetState(template.id, { title: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10
+                            text-white placeholder-zinc-500
+                            focus:outline-none focus:ring-2 focus:ring-violet-500/50
+                            transition-all"
+                          placeholder="Введите заголовок..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                          Контент (Pretext)
+                        </label>
+                        <textarea
+                          value={state.content}
+                          onChange={(e) => updatePresetState(template.id, { content: e.target.value })}
+                          rows={6}
+                          className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10
+                            text-zinc-300 placeholder-zinc-500 font-mono text-sm
+                            focus:outline-none focus:ring-2 focus:ring-violet-500/50
+                            transition-all resize-none"
+                          placeholder="Введите Pretext разметку..."
+                        />
                       </div>
                     </div>
+                  )}
+
+                  {/* Preview area */}
+                  <div className="relative rounded-lg bg-zinc-900/50 border border-white/5 p-4 mb-4
+                    min-h-[200px] max-h-[300px] overflow-y-auto">
+                    <PretextRenderer content={state.content} />
                   </div>
 
-                  {/* Type badge */}
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md
-                    bg-white/5 border border-white/10 mb-3">
-                    {template.type === 'slide' && <LayoutGrid className="w-3.5 h-3.5 text-violet-400" />}
-                    {template.type === 'card' && <FileText className="w-3.5 h-3.5 text-cyan-400" />}
-                    {template.type === 'cheatsheet' && <ScrollText className="w-3.5 h-3.5 text-pink-400" />}
-                    <span className="text-xs text-zinc-400 font-medium">
-                      {template.type === 'slide' && 'Слайд'}
-                      {template.type === 'card' && 'Карточка'}
-                      {template.type === 'cheatsheet' && 'Шпаргалка'}
-                    </span>
+                  {/* Action buttons */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => handlePreview(template)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                        bg-white/5 border border-white/10
+                        hover:bg-white/10 hover:border-cyan-500/50
+                        transition-all duration-300 text-sm font-medium text-zinc-300
+                        hover:text-cyan-400"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Просмотр
+                    </button>
+
+                    <button
+                      onClick={() => handleExport(template)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                        bg-white/5 border border-white/10
+                        hover:bg-white/10 hover:border-violet-500/50
+                        transition-all duration-300 text-sm font-medium text-zinc-300
+                        hover:text-violet-400"
+                    >
+                      <Download className="w-4 h-4" />
+                      Экспорт
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenInEditor(template)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                        bg-gradient-to-r from-violet-500/20 to-cyan-500/20
+                        border border-violet-500/30
+                        hover:from-violet-500/30 hover:to-cyan-500/30
+                        hover:border-violet-500/50
+                        transition-all duration-300 text-sm font-medium text-white"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Редактор
+                    </button>
                   </div>
-
-                  {/* Title */}
-                  <h3 className="text-lg font-bold text-white mb-2 group-hover:gradient-text-static transition-colors">
-                    {template.name}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-sm text-zinc-400 leading-relaxed mb-4 line-clamp-2">
-                    {template.description}
-                  </p>
-
-                  {/* CTA Button */}
-                  <button
-                    onClick={() => handleUseTemplate(template)}
-                    className="w-full px-4 py-2.5 rounded-lg
-                      bg-gradient-to-r from-violet-500/20 to-cyan-500/20
-                      border border-violet-500/30
-                      hover:from-violet-500/30 hover:to-cyan-500/30
-                      hover:border-violet-500/50
-                      transition-all duration-300
-                      hover:shadow-[0_0_25px_rgba(139,92,246,0.25)]
-                      text-sm font-medium text-white
-                      group-hover:scale-105"
-                  >
-                    Использовать шаблон
-                  </button>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </main>
 
         {/* Footer */}
@@ -210,6 +314,32 @@ export default function GalleryPage() {
           </div>
         </footer>
       </div>
+
+      {/* Modals */}
+      {previewTemplate && (
+        <PreviewModal
+          isOpen={!!previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+          onExport={() => {
+            setExportTemplate(previewTemplate);
+            setPreviewTemplate(null);
+          }}
+          title={previewTemplate.name}
+        >
+          <div className="max-w-4xl mx-auto bg-zinc-900 rounded-2xl p-12 border border-white/10">
+            <PretextRenderer content={getPresetState(previewTemplate.id).content} />
+          </div>
+        </PreviewModal>
+      )}
+
+      {exportTemplate && (
+        <ExportModal
+          isOpen={!!exportTemplate}
+          onClose={() => setExportTemplate(null)}
+          onExport={handleExportConfirm}
+          title={`Экспорт: ${exportTemplate.name}`}
+        />
+      )}
     </div>
   );
 }
