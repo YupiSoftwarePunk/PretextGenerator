@@ -20,6 +20,33 @@ body {
   min-height: 100vh;
 }
 
+/* Глобальные неоновые скроллбары */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.35);
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.8);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.35) transparent;
+}
+
 /* Премиальные эффекты свечения */
 @keyframes glow-pulse-soft {
   0%, 100% {

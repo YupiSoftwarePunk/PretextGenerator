@@ -38,7 +38,7 @@ function renderPretext(content: string): string {
 
   // Списки
   html = html.replace(/^- (.+)$/gm, '<li class="text-zinc-300 ml-6 list-disc">$1</li>');
-  html = html.replace(/(<li.*<\/li>)/s, '<ul class="space-y-2 my-4">$1</ul>');
+  html = html.replace(/(<li[\s\S]*?<\/li>)/g, '<ul class="space-y-2 my-4">$1</ul>');
 
   // Жирный текст
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');

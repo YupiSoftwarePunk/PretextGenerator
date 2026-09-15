@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X, Download, Image, FileCode, FileText, Loader2 } from 'lucide-react';
 
-type ExportFormat = 'png' | 'svg' | 'pdf' | 'webp';
+type ExportFormat = 'png' | 'webp' | 'svg' | 'html' | 'pdf';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -24,25 +24,31 @@ const formats: { value: ExportFormat; label: string; icon: typeof Image; descrip
     value: 'png',
     label: 'PNG',
     icon: Image,
-    description: 'Растровое изображение, лучше для социальных сетей',
-  },
-  {
-    value: 'svg',
-    label: 'SVG',
-    icon: FileCode,
-    description: 'Векторная графика, идеально для масштабирования',
-  },
-  {
-    value: 'pdf',
-    label: 'PDF',
-    icon: FileText,
-    description: 'Документ для печати и презентаций',
+    description: 'Растровое изображение высокого разрешения для соцсетей',
   },
   {
     value: 'webp',
     label: 'WebP',
     icon: Image,
-    description: 'Современный формат с лучшим сжатием',
+    description: 'Современный сжатый веб-формат с прозрачностью',
+  },
+  {
+    value: 'svg',
+    label: 'SVG',
+    icon: FileCode,
+    description: 'Векторный формат с бесконечным масштабированием',
+  },
+  {
+    value: 'html',
+    label: 'HTML / Pretext Code',
+    icon: FileCode,
+    description: 'Готовый HTML с вшитыми Pretext-стилями',
+  },
+  {
+    value: 'pdf',
+    label: 'PDF Document',
+    icon: FileText,
+    description: 'Векторный PDF для печати и презентаций',
   },
 ];
 
@@ -135,7 +141,7 @@ export default function ExportModal({ isOpen, onClose, onExport, title }: Export
           <label className="block text-sm font-medium text-zinc-300">
             Формат файла
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {formats.map((f) => {
               const Icon = f.icon;
               const isActive = format === f.value;
@@ -180,7 +186,7 @@ export default function ExportModal({ isOpen, onClose, onExport, title }: Export
               <button
                 key={s.value}
                 onClick={() => setScale(s.value)}
-                disabled={isExporting || format === 'svg'}
+                disabled={isExporting || format === 'svg' || format === 'html'}
                 className={`
                   flex-1 px-4 py-3 rounded-lg border backdrop-blur-sm
                   transition-all duration-200
@@ -196,9 +202,10 @@ export default function ExportModal({ isOpen, onClose, onExport, title }: Export
               </button>
             ))}
           </div>
-          {format === 'svg' && (
+          {(format === 'svg' || format === 'html') && (
             <p className="text-xs text-zinc-500 italic">
-              SVG — векторный формат, масштаб не применяется
+              {format === 'svg' && 'SVG — векторный формат, масштаб не применяется'}
+              {format === 'html' && 'HTML — текстовый формат, масштаб не применяется'}
             </p>
           )}
         </div>
@@ -248,7 +255,7 @@ export default function ExportModal({ isOpen, onClose, onExport, title }: Export
               type="checkbox"
               checked={transparentBackground}
               onChange={(e) => setTransparentBackground(e.target.checked)}
-              disabled={isExporting || format === 'pdf'}
+              disabled={isExporting || format === 'pdf' || format === 'html'}
               className="w-5 h-5 rounded border-2 border-white/20 bg-white/5
                 checked:bg-gradient-to-r checked:from-violet-500 checked:to-cyan-500
                 checked:border-transparent
@@ -261,7 +268,7 @@ export default function ExportModal({ isOpen, onClose, onExport, title }: Export
                 Прозрачный фон
               </div>
               <div className="text-xs text-zinc-500 mt-0.5">
-                Убрать фоновый цвет (не работает для PDF)
+                Убрать фоновый цвет (не работает для PDF и HTML)
               </div>
             </div>
           </label>

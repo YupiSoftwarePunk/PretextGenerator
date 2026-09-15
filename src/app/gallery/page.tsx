@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, LayoutGrid, FileText, ScrollText, Sparkles, Eye, Download, Edit } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { templates } from '@/lib/templates';
 import { generateId } from '@/lib/storage';
+import { exportContent } from '@/lib/export';
 import PreviewModal from '@/components/modals/PreviewModal';
 import ExportModal, { ExportOptions } from '@/components/modals/ExportModal';
 import PretextRenderer from '@/components/pretext/PretextRenderer';
@@ -33,6 +34,7 @@ export default function GalleryPage() {
   const [expandedPreset, setExpandedPreset] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [exportTemplate, setExportTemplate] = useState<Template | null>(null);
+  const exportRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const filteredTemplates = activeFilter === 'all'
     ? templates
@@ -66,12 +68,23 @@ export default function GalleryPage() {
   const handleExportConfirm = async (options: ExportOptions) => {
     if (!exportTemplate) return;
 
-    const state = getPresetState(exportTemplate.id);
-    console.log('Exporting:', { template: exportTemplate.name, options, state });
+    const contentElement = exportRefs.current[exportTemplate.id];
+    if (!contentElement) {
+      console.error('Export element not found');
+      return;
+    }
 
-    // TODO: Implement actual export logic with html2canvas/jsPDF
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    alert(`Экспорт в ${options.format.toUpperCase()} выполнен!`);
+    const state = getPresetState(exportTemplate.id);
+    const filename = `pretext-${exportTemplate.type}-${Date.now()}`;
+
+    try {
+      await exportContent(contentElement, filename, options);
+      // Success notification (можно добавить toast)
+      console.log(`✅ Файл ${filename}.${options.format} успешно сохранен`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert(`Ошибка экспорта: ${error}`);
+    }
   };
 
   const handleOpenInEditor = (template: Template) => {
@@ -255,8 +268,13 @@ export default function GalleryPage() {
                   )}
 
                   {/* Preview area */}
-                  <div className="relative rounded-lg bg-zinc-900/50 border border-white/5 p-4 mb-4
-                    min-h-[200px] max-h-[300px] overflow-y-auto">
+                  <div
+                    ref={(el) => {
+                      exportRefs.current[template.id] = el;
+                    }}
+                    className="relative rounded-lg bg-zinc-900/50 border border-white/5 p-4 mb-4
+                      min-h-[200px] max-h-[300px] overflow-y-auto"
+                  >
                     <PretextRenderer content={state.content} />
                   </div>
 

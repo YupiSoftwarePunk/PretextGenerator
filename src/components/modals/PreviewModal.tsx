@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, ZoomIn, ZoomOut, Grid3x3, Moon, Sparkles, Download } from 'lucide-react';
 
 type BackgroundType = 'dark' | 'pitch-black' | 'neon-grid';
@@ -35,8 +35,8 @@ const backgrounds: { type: BackgroundType; label: string; icon: typeof Grid3x3; 
 ];
 
 export default function PreviewModal({ isOpen, onClose, onExport, children, title }: PreviewModalProps) {
-  const [background, setBackground] = React.useState<BackgroundType>('dark');
-  const [zoom, setZoom] = React.useState(100);
+  const [background, setBackground] = useState<BackgroundType>('dark');
+  const [zoom, setZoom] = useState(100);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
