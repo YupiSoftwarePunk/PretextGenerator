@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, LayoutGrid, FileText, ScrollText, Sparkles, Eye, Download, Edit } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
@@ -34,7 +34,6 @@ export default function GalleryPage() {
   const [expandedPreset, setExpandedPreset] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [exportTemplate, setExportTemplate] = useState<Template | null>(null);
-  const exportRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const filteredTemplates = activeFilter === 'all'
     ? templates
@@ -68,18 +67,12 @@ export default function GalleryPage() {
   const handleExportConfirm = async (options: ExportOptions) => {
     if (!exportTemplate) return;
 
-    const contentElement = exportRefs.current[exportTemplate.id];
-    if (!contentElement) {
-      console.error('Export element not found');
-      return;
-    }
-
     const state = getPresetState(exportTemplate.id);
     const filename = `pretext-${exportTemplate.type}-${Date.now()}`;
 
     try {
-      await exportContent(contentElement, filename, options);
-      // Success notification (можно добавить toast)
+      // Передаем content напрямую, не DOM элемент
+      await exportContent(state.content, filename, options);
       console.log(`✅ Файл ${filename}.${options.format} успешно сохранен`);
     } catch (error) {
       console.error('Export failed:', error);
@@ -268,13 +261,8 @@ export default function GalleryPage() {
                   )}
 
                   {/* Preview area */}
-                  <div
-                    ref={(el) => {
-                      exportRefs.current[template.id] = el;
-                    }}
-                    className="relative rounded-lg bg-zinc-900/50 border border-white/5 p-4 mb-4
-                      min-h-[200px] max-h-[300px] overflow-y-auto"
-                  >
+                  <div className="relative rounded-lg bg-zinc-900/50 border border-white/5 p-4 mb-4
+                    min-h-[200px] max-h-[300px] overflow-y-auto">
                     <PretextRenderer content={state.content} />
                   </div>
 
@@ -342,10 +330,12 @@ export default function GalleryPage() {
             setExportTemplate(previewTemplate);
             setPreviewTemplate(null);
           }}
-          title={previewTemplate.name}
+          title={previewTemplate?.name}
         >
           <div className="max-w-4xl mx-auto bg-zinc-900 rounded-2xl p-12 border border-white/10">
-            <PretextRenderer content={getPresetState(previewTemplate.id).content} />
+            <PretextRenderer
+              content={previewTemplate ? getPresetState(previewTemplate.id).content : ''}
+            />
           </div>
         </PreviewModal>
       )}
