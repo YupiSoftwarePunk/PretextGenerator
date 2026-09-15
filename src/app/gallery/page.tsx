@@ -266,43 +266,33 @@ export default function GalleryPage() {
                     <PretextRenderer content={state.content} />
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Action buttons - 2 columns: Preview + Export */}
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => handlePreview(template)}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-                        bg-white/5 border border-white/10
+                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg
+                        bg-white/5 border border-white/10 backdrop-blur-sm
                         hover:bg-white/10 hover:border-cyan-500/50
                         transition-all duration-300 text-sm font-medium text-zinc-300
-                        hover:text-cyan-400"
+                        hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
                     >
                       <Eye className="w-4 h-4" />
-                      Просмотр
+                      Предпросмотр
                     </button>
 
                     <button
                       onClick={() => handleExport(template)}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-                        bg-white/5 border border-white/10
-                        hover:bg-white/10 hover:border-violet-500/50
-                        transition-all duration-300 text-sm font-medium text-zinc-300
-                        hover:text-violet-400"
+                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg
+                        bg-gradient-to-r from-violet-500/20 to-cyan-500/20
+                        border border-violet-500/30 backdrop-blur-sm
+                        hover:from-violet-500/30 hover:to-cyan-500/30
+                        hover:border-violet-500/50
+                        transition-all duration-300
+                        hover:shadow-[0_0_25px_rgba(139,92,246,0.3)]
+                        text-sm font-semibold text-white"
                     >
                       <Download className="w-4 h-4" />
                       Экспорт
-                    </button>
-
-                    <button
-                      onClick={() => handleOpenInEditor(template)}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-                        bg-gradient-to-r from-violet-500/20 to-cyan-500/20
-                        border border-violet-500/30
-                        hover:from-violet-500/30 hover:to-cyan-500/30
-                        hover:border-violet-500/50
-                        transition-all duration-300 text-sm font-medium text-white"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Редактор
                     </button>
                   </div>
                 </div>
