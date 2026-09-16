@@ -39,8 +39,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-geist-mono)', 'monospace'],
+        pixel: ['var(--font-vt323)', 'monospace'],
+        retro: ['var(--font-press-start)', 'monospace'],
+        neon: ['var(--font-orbitron)', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

@@ -1,20 +1,101 @@
 @import "tailwindcss";
 
 :root {
-  --background: #1a0b2e;
-  --foreground: #f0f0f0;
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  --font-pixel: var(--font-vt323);
+  --font-retro: var(--font-press-start);
+  --font-neon: var(--font-orbitron);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
+  background: #09090B;
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-neon), system-ui, sans-serif;
   min-height: 100vh;
+}
+
+/* Премиальные эффекты свечения */
+@keyframes glow-pulse-soft {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.25);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes smoothShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Glassmorphism эффекты */
+.glass-card {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  background: rgba(24, 24, 27, 0.8);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* Градиентный текст с мягким переливанием */
+.gradient-text {
+  background: linear-gradient(90deg, #38bdf8, #c084fc, #ec4899, #38bdf8);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: smoothShift 8s ease-in-out infinite;
+}
+
+.gradient-text-static {
+  background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Мягкое свечение для иконок */
+.icon-glow {
+  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.4));
+}
+
+/* Радиальный градиент на фоне */
+.radial-glow {
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(139, 92, 246, 0.15) 0%,
+    transparent 50%
+  );
 }
