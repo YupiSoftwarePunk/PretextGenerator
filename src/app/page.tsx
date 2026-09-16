@@ -1,69 +1,128 @@
-import Image from "next/image";
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { FileText, LayoutGrid, ScrollText } from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import { DocumentType } from '@/types';
+
+interface DocumentTypeCard {
+  type: DocumentType;
+  title: string;
+  description: string;
+  icon: typeof FileText;
+  color: 'pink' | 'cyan';
+}
+
+const documentTypes: DocumentTypeCard[] = [
+  {
+    type: 'slide',
+    title: 'Слайды',
+    description: 'Создавайте презентационные слайды с анимациями и переходами',
+    icon: LayoutGrid,
+    color: 'pink',
+  },
+  {
+    type: 'card',
+    title: 'Карточки',
+    description: 'Визуальные карточки и флэшкарды для обучения',
+    icon: FileText,
+    color: 'cyan',
+  },
+  {
+    type: 'cheatsheet',
+    title: 'Шпаргалки',
+    description: 'Структурированные справочники и инструкции',
+    icon: ScrollText,
+    color: 'pink',
+  },
+];
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleCreateDocument = (type: DocumentType) => {
+    router.push(`/editor?type=${type}`);
+  };
+
+  const handleViewGallery = () => {
+    router.push('/gallery');
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-gradient-to-br from-dark-purple-900 via-dark-purple-800 to-dark-purple-900 flex flex-col">
+      <header className="w-full py-8 px-6 border-b border-dark-purple-700">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-neon-pink-500 to-neon-cyan-500 bg-clip-text text-transparent">
+              Pretext Generator
+            </h1>
+            <p className="text-text-light-300 mt-2">Создавайте визуальный контент с разметкой Pretext</p>
+          </div>
+          <Button variant="secondary" onClick={handleViewGallery}>
+            Галерея
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-semibold text-text-light-100 mb-4">
+            Выберите тип документа
+          </h2>
+          <p className="text-text-light-300 text-lg">
+            Начните с выбора формата, который вам нужен
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {documentTypes.map((docType) => {
+            const Icon = docType.icon;
+            const glowClass = docType.color === 'pink' ? 'group-hover:shadow-neon-pink' : 'group-hover:shadow-neon-cyan';
+            const iconColorClass = docType.color === 'pink' ? 'text-neon-pink-500' : 'text-neon-cyan-500';
+
+            return (
+              <Card
+                key={docType.type}
+                interactive
+                className={`group ${glowClass}`}
+                onClick={() => handleCreateDocument(docType.type)}
+              >
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className={`p-4 rounded-full bg-dark-purple-700 ${iconColorClass} group-hover:animate-pulse-glow`}>
+                    <Icon size={48} />
+                  </div>
+                  <h3 className="text-2xl font-semibold text-text-light-100">
+                    {docType.title}
+                  </h3>
+                  <p className="text-text-light-300">
+                    {docType.description}
+                  </p>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="mt-16 text-center">
+          <Card className="max-w-3xl mx-auto bg-gradient-to-r from-dark-purple-800/50 to-dark-purple-700/50 backdrop-blur">
+            <h3 className="text-xl font-semibold text-text-light-100 mb-4">
+              Что такое Pretext?
+            </h3>
+            <p className="text-text-light-300 leading-relaxed">
+              Pretext — это минималистичная разметка для создания структурированного контента.
+              Простой синтаксис позволяет быстро создавать слайды, карточки и шпаргалки,
+              которые можно экспортировать в различные форматы.
+            </p>
+          </Card>
         </div>
       </main>
+
+      <footer className="w-full py-6 px-6 border-t border-dark-purple-700">
+        <div className="max-w-6xl mx-auto text-center text-text-light-400">
+          <p>Создано для GitHub Pages • Powered by Next.js & Pretext</p>
+        </div>
+      </footer>
     </div>
   );
 }
