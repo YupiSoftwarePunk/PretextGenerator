@@ -402,9 +402,9 @@ export const PlaygroundArena: React.FC = () => {
       </div>
 
       {/* Main Grid: Controls Panel + Interactive Arena */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch-">
         {/* Left Side: Control Controls Panel (4 Cols) */}
-        <div className="lg:col-span-4 glass-card rounded-2xl p-6 border border-white/10 space-y-6">
+        <div className="lg:col-span-4 glass-card h-full flex flex-col rounded-2xl p-6 border border-white/10 space-y-6">
           {/* Presets Selection */}
           <div>
             <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold mb-2.5 block">
@@ -467,7 +467,7 @@ export const PlaygroundArena: React.FC = () => {
 
             {/* Line Height */}
             <div>
-              <div className="flex justify-between text-xs font-mono mb-1.5">
+              <div className="flex justify-between text-xs font-mono mb-1.5 ">
                 <span className="text-zinc-400">Высота строки</span>
                 <span className="text-pink-400 font-bold">{lineHeight} px</span>
               </div>
@@ -555,7 +555,7 @@ export const PlaygroundArena: React.FC = () => {
         </div>
 
         {/* Right Side: Interactive Sandbox Arena (8 Cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
+        <div className="lg:col-span-8 flex flex-col gap-4 h-full">
           <div
             ref={containerRef}
             className="relative w-full border border-violet-500/30 rounded-3xl p-6 sm:p-8 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_0_50px_rgba(139,92,246,0.15)] overflow-hidden"

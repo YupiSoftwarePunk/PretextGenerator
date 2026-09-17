@@ -141,11 +141,6 @@ function drawObstacleOnCanvas(
     ctx.font = '600 10px monospace';
     ctx.fillStyle = borderColor;
     ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height / 2 + 12);
-
-    // Move hint
-    ctx.font = '9px monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('drag ↕↔', obs.x + obs.width / 2, obs.y + obs.height - 10);
   }
 
   ctx.restore();
@@ -526,7 +521,20 @@ function EditorContent() {
   };
 
   const handleUpdateObstacle = (id: string, updates: Partial<PretextObstacle>) => {
-    const updated = obstaclesRef.current.map((o) => (o.id === id ? { ...o, ...updates } : o));
+    const currentWidth = containerWidthRef.current;
+    const updated = obstaclesRef.current.map((o) => {
+      if (o.id !== id) return o;
+      const w = updates.width !== undefined ? updates.width : o.width;
+      const h = updates.height !== undefined ? updates.height : o.height;
+      const maxW = Math.max(60, currentWidth - o.x);
+      const maxH = Math.max(50, 390 - o.y);
+      return {
+        ...o,
+        ...updates,
+        width: Math.min(w, maxW),
+        height: Math.min(h, maxH),
+      };
+    });
     obstaclesRef.current = updated;
     setObstacles(updated);
   };

@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pretext Slide & Card Generator 🚀
 
-## Getting Started
+Веб-приложение для создания визуальных карточек, презентационных слайдов и шпаргалок на базе передового алгоритма текстового обтекания **Pretext**. Проект оптимизирован для статического развертывания на GitHub Pages и работы в полностью клиентской среде без серверной инфраструктуры.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🌟 Основные возможности
+
+- **Живое обтекание текста (Pretext Engine):** Текст документа в реальном времени рассчитывает свою траекторию и огибает любые геометрические препятствия (круги, прямоугольники, бейджи, цитаты) на скорости до **120 FPS**.
+- **Нулевой DOM Reflow:** Все геометрические вычисления выполняются в памяти на базе Canvas 2D API без дорогостоящих пересчетов стилей браузера.
+- **Интерактивная студия (Editor):**
+  - Поддержка разметки Pretext (заголовки, жирный текст, курсив, цитаты, код).
+  - Свободное перетаскивание препятствий мышкой (с жестким ограничением в пределах холста).
+  - Удобная настройка размеров (ширина/высота) и редактирование текстов бейджей и цитат.
+  - Регулировка безопасных отступов (`Gap`).
+- **Галерея и пресеты:** Просмотр сохраненных документов (в `localStorage`), готовых шаблонов и быстрый переход в студию с сохранением контекста.
+- **Профессиональный экспорт:** Экспорт макетов в чистый автономный **HTML** (с полностью отформатированными стилями и обтеканием) и изображения **PNG**.
+
+---
+
+## 🛠 Технологический стек
+
+- **Фреймворк:** Next.js 16 (App Router, Static Export)
+- **Язык:** TypeScript (строгая типизация)
+- **Стилизация:** Tailwind CSS 4
+- **Графика и анимация:** HTML5 Canvas 2D API, Framer Motion
+- **Иконки:** Lucide React
+
+---
+
+## 📂 Архитектура проекта
+
+```
+src/
+├── app/
+│   ├── layout.tsx           # Корневой макет
+│   ├── page.tsx             # Главная витрина (Hero, PlaygroundArena, Showcase)
+│   ├── editor/
+│   │   └── page.tsx         # Интерактивная студия (редактор + холст)
+│   ├── preview/
+│   │   └── page.tsx         # Предпросмотр документов
+│   └── gallery/
+│       └── page.tsx         # Галерея сохраненных работ и пресетов
+├── components/
+│   ├── layout/Header.tsx    # Навигационная панель
+│   ├── pretext/             # Компоненты рендеринга Pretext
+│   ├── showcase/            # Интерактивные витрины главной страницы
+│   └── ui/                  # UI-компоненты (кнопки, карточки)
+├── hooks/                   # React хуки
+├── lib/
+│   ├── PretextEngine.ts     # Ядро расчета обтекания текста
+│   ├── templates.ts         # Пресеты документов
+│   └── storage.ts           # Управление localStorage
+└── types/
+    └── index.ts             # TypeScript типы
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚙️ Установка и локальный запуск
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Клонируйте репозиторий:**
+   ```bash
+   git clone https://github.com/your-username/pretext.git
+   cd pretext
+   ```
 
-## Learn More
+2. **Установите зависимости:**
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. **Запустите сервер разработки:**
+   ```bash
+   npm run dev
+   ```
+   Откройте [http://localhost:3000](http://localhost:3000) в браузере.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Сборка для Production (Static Export)
 
-## Deploy on Vercel
+Проект настроен для статической генерации (подходит для GitHub Pages):
+```bash
+npm run build
+```
+Собранные статические файлы будут помещены в директорию `out/`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 Лицензия
+
+Распространяется под лицензией MIT. Подробнее см. файл [LICENSE](LICENSE).
