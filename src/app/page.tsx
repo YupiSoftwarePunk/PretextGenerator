@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { FileText, LayoutGrid, ScrollText, Sparkles, ArrowRight } from 'lucide-react';
 import { DocumentType } from '@/types';
+import { JournalVisualizer } from '@/components/JournalVisualizer';
 
 interface DocumentTypeCard {
   type: DocumentType;
@@ -60,8 +61,7 @@ export default function Home() {
       }} />
 
       {/* Floating orbs */}
-      <div className="absolute top-20 left-[10%] w-96 h-96 bg-violet-500/10 rounded-full blur-[120px] animate-[float-gentle_8s_ease-in-out_infinite]" />
-      <div className="absolute bottom-20 right-[10%] w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] animate-[float-gentle_10s_ease-in-out_infinite]" />
+      <FloatingObstacles />
 
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Header */}
@@ -149,7 +149,7 @@ export default function Home() {
 
           {/* Info card */}
           <div className="glass-card rounded-2xl p-10 max-w-4xl mx-auto
-            hover:shadow-[0_0_40px_rgba(139,92,246,0.15)] transition-all duration-500">
+            hover:shadow-[0_0_40px_rgba(139,92,246,0.15)] transition-all duration-500 mb-20">
             <div className="flex items-start gap-6">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500
                 flex items-center justify-center">
@@ -183,6 +183,18 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+          
+          {/* Journal Visualizer Demo */}
+          <div className="max-w-4xl mx-auto mb-20">
+            <h3 className="text-3xl font-bold text-white mb-6 text-center">Демонстрация движка</h3>
+            <JournalVisualizer 
+              text="Претекст — это не просто разметка, это новый способ восприятия информации. Когда текст красиво обтекает элементы, он становится живым, журнальным, невероятно удобным для чтения. Попробуйте сами, как наш движок автоматически адаптирует макет под препятствия."
+              initialObstacles={[
+                { x: 100, y: 50, width: 150, height: 150, shape: 'circle' },
+                { x: 400, y: 150, width: 200, height: 100, shape: 'rect' }
+              ]}
+            />
           </div>
         </main>
 
