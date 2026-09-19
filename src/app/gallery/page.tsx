@@ -59,6 +59,14 @@ export default function GalleryPage() {
 
   const [copied, setCopied] = useState(false);
 
+  const handleOpenInStudio = (type: DocumentType, content: string, title: string) => {
+    try {
+      localStorage.setItem('pretext_active_doc', JSON.stringify({ type, content, title }));
+    } catch (e) {
+      console.error('Failed to save active doc', e);
+    }
+  };
+
   const handleDelete = (id: string) => {
     const updated = savedDocs.filter((d) => d.id !== id);
     try {
@@ -232,6 +240,7 @@ export default function GalleryPage() {
 
                       <Link
                         href={`/editor?type=${doc.type}`}
+                        onClick={() => handleOpenInStudio(doc.type, doc.content, doc.title)}
                         className="flex items-center gap-1 text-xs font-semibold text-cyan-400 group-hover:text-cyan-300 transition-colors"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -296,6 +305,7 @@ export default function GalleryPage() {
 
                     <Link
                       href={`/editor?type=${tpl.type}`}
+                      onClick={() => handleOpenInStudio(tpl.type, tpl.content, tpl.name)}
                       className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 hover:bg-violet-600 hover:text-white border border-white/10 text-xs font-medium text-zinc-300 transition-all"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -356,6 +366,7 @@ export default function GalleryPage() {
                 </button>
                 <Link
                   href={`/editor?type=${previewDoc.type}`}
+                  onClick={() => handleOpenInStudio(previewDoc.type, previewDoc.content, previewDoc.title)}
                   className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-xs shadow-lg shadow-violet-600/30 transition-all"
                 >
                   <Edit3 className="w-3.5 h-3.5" />

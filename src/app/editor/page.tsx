@@ -160,23 +160,28 @@ function buildExportHTML(
   canvasWidth: number,
   canvasHeight: number
 ): string {
-  const svgContours = obstacles.map((obs) => {
-    const path = PretextEngine.generateContourPath(obs, 6);
-    const strokeColor =
-      obs.kind === 'badge' ? '#f59e0b' : obs.kind === 'quote' ? '#22d3ee' : '#c084fc';
-    const fillColor =
-      obs.kind === 'badge'
-        ? 'rgba(245,158,11,0.15)'
+  const obstacleHtml = obstacles.map((obs) => {
+    const bg = obs.shape === 'circle'
+      ? 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(139,92,246,0.1) 100%)'
+      : obs.kind === 'badge'
+        ? 'rgba(245,158,11,0.2)'
         : obs.kind === 'quote'
-          ? 'rgba(6,182,212,0.15)'
-          : 'rgba(139,92,246,0.15)';
-    return `<path d="${path}" stroke="${strokeColor}" stroke-width="1.5" fill="${fillColor}" filter="url(#neon)" />`;
+          ? 'rgba(6,182,212,0.2)'
+          : 'rgba(139,92,246,0.2)';
+    const border = obs.kind === 'badge' ? '#f59e0b' : obs.kind === 'quote' ? '#22d3ee' : '#c084fc';
+    const icon = obs.kind === 'image' ? '🖼' : obs.kind === 'quote' ? '💬' : '⚡';
+    const radius = obs.shape === 'circle' ? '50%' : '12px';
+
+    return `<div style="position: absolute; left: ${obs.x}px; top: ${obs.y}px; width: ${obs.width}px; height: ${obs.height}px; background: ${bg}; border: 1.5px solid ${border}; border-radius: ${radius}; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 20px ${border}40; backdrop-filter: blur(4px); color: #fff; font-family: monospace; text-align: center; padding: 8px;">
+      <div style="font-size: 16px; margin-bottom: 4px;">${icon}</div>
+      <div style="font-size: 10px; font-weight: bold; color: ${border};">${obs.label}</div>
+    </div>`;
   }).join('\n');
 
   const wordSpans = layoutItems
     .map(
       (item) =>
-        `<span style="position:absolute;left:${item.x}px;top:${item.y - 15}px;white-space:nowrap;font-size:15px;color:#e4e4e7;">${item.word}</span>`
+        `<span style="position:absolute;left:${item.x}px;top:${item.y - 15}px;white-space:nowrap;font-size:15px;color:#e4e4e7;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">${item.word}</span>`
     )
     .join('\n');
 
@@ -186,24 +191,22 @@ function buildExportHTML(
   <meta charset="UTF-8">
   <title>Pretext Export — ${docType.toUpperCase()}</title>
   <style>
-    body { background: #09090b; margin: 0; padding: 40px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .stage { position: relative; width: ${canvasWidth}px; height: ${canvasHeight}px; background: rgba(24,24,27,0.8); border: 1px solid rgba(139,92,246,0.3); border-radius: 16px; overflow: hidden; }
-    svg.contours { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    body { background: #09090b; margin: 0; padding: 40px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .export-container { width: 100%; max-width: ${canvasWidth}px; background: #18181b; border: 1px solid rgba(139,92,246,0.4); border-radius: 24px; padding: 24px; box-shadow: 0 0 50px rgba(139,92,246,0.25); }
+    .stage { position: relative; width: 100%; height: ${canvasHeight}px; background: rgba(24,24,27,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; overflow: hidden; }
     .words { position: absolute; inset: 0; }
   </style>
 </head>
 <body>
-  <div class="stage">
-    <svg class="contours" viewBox="0 0 ${canvasWidth} ${canvasHeight}">
-      <defs>
-        <filter id="neon" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      ${svgContours}
-    </svg>
-    <div class="words">${wordSpans}</div>
+  <div class="export-container">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+      <span style="font-family: monospace; font-size: 12px; color: #a78bfa; background: rgba(139,92,246,0.2); padding: 4px 10px; border-radius: 6px; text-transform: uppercase; font-weight: bold;">${docType}</span>
+      <span style="font-family: monospace; font-size: 12px; color: #71717a;">Pretext Engine Export</span>
+    </div>
+    <div class="stage">
+      <div class="words">${wordSpans}</div>
+      ${obstacleHtml}
+    </div>
   </div>
 </body>
 </html>`;
@@ -219,6 +222,22 @@ function EditorContent() {
     const preset = PRESETS[initialType];
     return preset.text;
   });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('pretext_active_doc');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.type && parsed.content) {
+          setDocType(parsed.type);
+          setContent(parsed.content);
+        }
+        localStorage.removeItem('pretext_active_doc');
+      }
+    } catch (e) {
+      console.error('Failed to load active doc', e);
+    }
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'flow' | 'card'>('flow');
   const [copied, setCopied] = useState(false);
@@ -506,6 +525,12 @@ function EditorContent() {
     setObstacles(updated);
   };
 
+  const handleUpdateObstacle = (id: string, updates: Partial<PretextObstacle>) => {
+    const updated = obstaclesRef.current.map((o) => (o.id === id ? { ...o, ...updates } : o));
+    obstaclesRef.current = updated;
+    setObstacles(updated);
+  };
+
   const handleClearObstacles = () => {
     obstaclesRef.current = [];
     setObstacles([]);
@@ -600,23 +625,62 @@ function EditorContent() {
 
             {/* Obstacle List */}
             {obstacles.length > 0 && (
-              <div className="space-y-1.5">
-                {obstacles.map((obs, idx) => (
+              <div className="space-y-2.5">
+                {obstacles.map((obs) => (
                   <div
                     key={obs.id}
-                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-[11px] font-mono ${kindColor[obs.kind]}`}
+                    className={`p-3 rounded-xl border text-xs font-mono space-y-2 ${kindColor[obs.kind]}`}
                   >
-                    <span className="flex items-center gap-1.5">
-                      <ChevronRight className="w-3 h-3 opacity-60" />
-                      {obs.label} #{idx + 1}
-                    </span>
-                    <button
-                      onClick={() => handleRemoveObstacle(obs.id)}
-                      className="opacity-50 hover:opacity-100 transition-opacity ml-2"
-                      title="Удалить"
-                    >
-                      ✕
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold">
+                        {obs.kind === 'image' ? '🖼' : obs.kind === 'quote' ? '💬' : '⚡'}
+                        <input
+                          type="text"
+                          value={obs.label}
+                          onChange={(e) => handleUpdateObstacle(obs.id, { label: e.target.value })}
+                          className="bg-black/40 border border-white/20 rounded px-1.5 py-0.5 text-white w-28 focus:outline-none focus:border-violet-400 text-xs"
+                          title="Текст на наклейке"
+                        />
+                      </span>
+                      <button
+                        onClick={() => handleRemoveObstacle(obs.id)}
+                        className="text-zinc-400 hover:text-rose-400 p-1"
+                        title="Удалить"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-[10px] text-zinc-300">
+                      <div>
+                        <div className="flex justify-between mb-0.5">
+                          <span>Ширина</span>
+                          <span className="text-violet-300 font-bold">{obs.width}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="80"
+                          max="260"
+                          value={obs.width}
+                          onChange={(e) => handleUpdateObstacle(obs.id, { width: Number(e.target.value) })}
+                          className="w-full accent-violet-400 h-1 bg-zinc-800 rounded cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-0.5">
+                          <span>Высота</span>
+                          <span className="text-violet-300 font-bold">{obs.height}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="50"
+                          max="180"
+                          value={obs.height}
+                          onChange={(e) => handleUpdateObstacle(obs.id, { height: Number(e.target.value) })}
+                          className="w-full accent-violet-400 h-1 bg-zinc-800 rounded cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
                 <div className="flex gap-2 pt-1">
