@@ -1,11 +1,8 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import {
-  ArrowLeft,
-  Sparkles,
   Copy,
   Check,
   Code,
@@ -14,12 +11,18 @@ import {
   Trash2,
   PlusCircle,
   Eye,
+  Download,
+  FileCode,
+  Heading,
+  Bold,
+  Italic,
+  Quote,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { getTemplatesByType } from '@/lib/templates';
 import PretextRenderer from '@/components/pretext/PretextRenderer';
-import PretextFlowRenderer from '@/components/pretext/PretextFlowRenderer';
-import { Obstacle } from '@/lib/PretextEngine';
+import { PretextEngine, Obstacle, WordLayoutItem } from '@/lib/PretextEngine';
+import { Header } from '@/components/layout/Header';
 
 function EditorContent() {
   const searchParams = useSearchParams();
@@ -30,12 +33,215 @@ function EditorContent() {
     const available = getTemplatesByType(initialType);
     return available.length > 0 ? available[0].content : '';
   });
-  const [activeTab, setActiveTab] = useState<'editor' | 'flow' | 'raw'>('flow');
+
+  const [activeTab, setActiveTab] = useState<'flow' | 'card'>('flow');
   const [copied, setCopied] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [gap, setGap] = useState<number>(14);
+
+  // Obstacles state
   const [obstacles, setObstacles] = useState<Obstacle[]>([
-    { x: 260, y: 40, width: 140, height: 140, shape: 'circle' },
+    { x: 180, y: 40, width: 120, height: 120, shape: 'circle', gap: 14 },
   ]);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const obstaclesRef = useRef<Obstacle[]>(obstacles);
+  const isDraggingRef = useRef<number | null>(null);
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const containerWidthRef = useRef<number>(500);
+
+  useEffect(() => {
+    obstaclesRef.current = obstacles;
+  }, [obstacles]);
+
+  const updateContainerWidth = useCallback(() => {
+    if (containerRef.current) {
+      const w = containerRef.current.clientWidth - 48;
+      containerWidthRef.current = Math.max(300, w);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateContainerWidth();
+    window.addEventListener('resize', updateContainerWidth);
+    return () => window.removeEventListener('resize', updateContainerWidth);
+  }, [updateContainerWidth]);
+
+  // Main Live Canvas Flow Render Loop
+  useEffect(() => {
+    if (activeTab !== 'flow') return;
+
+    let animationFrameId: number;
+
+    const render = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const currentWidth = containerWidthRef.current;
+      const currentHeight = 360;
+      const dpr = window.devicePixelRatio || 1;
+
+      if (canvas.width !== currentWidth * dpr || canvas.height !== currentHeight * dpr) {
+        canvas.width = currentWidth * dpr;
+        canvas.height = currentHeight * dpr;
+        canvas.style.width = `${currentWidth}px`;
+        canvas.style.height = `${currentHeight}px`;
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, currentWidth, currentHeight);
+
+      const activeObs = obstaclesRef.current;
+
+      const engine = new PretextEngine({
+        containerWidth: currentWidth,
+        fontSize: 15,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        lineHeight: 25,
+      });
+
+      const layoutItems: WordLayoutItem[] = engine.calculateWordLayout(
+        content,
+        activeObs,
+        gap
+      );
+
+      // Render Obstacles
+      activeObs.forEach((obs, idx) => {
+        const isDragging = isDraggingRef.current === idx;
+
+        ctx.save();
+        if (obs.shape === 'circle') {
+          const cx = obs.x + obs.width / 2;
+          const cy = obs.y + obs.height / 2;
+          const r = obs.width / 2;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fillStyle = isDragging ? 'rgba(168, 85, 247, 0.4)' : 'rgba(139, 92, 246, 0.22)';
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = isDragging ? '#e879f9' : '#c084fc';
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = isDragging ? 18 : 10;
+          ctx.stroke();
+
+          ctx.shadowBlur = 0;
+          ctx.font = '600 12px monospace';
+          ctx.fillStyle = '#fae8ff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`● Orb #${idx + 1}`, cx, cy);
+        } else {
+          ctx.beginPath();
+          ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 12);
+          ctx.fillStyle = isDragging ? 'rgba(6, 182, 212, 0.38)' : 'rgba(6, 182, 212, 0.18)';
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = isDragging ? '#67e8f9' : '#22d3ee';
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = isDragging ? 18 : 10;
+          ctx.stroke();
+
+          ctx.shadowBlur = 0;
+          ctx.font = '600 12px monospace';
+          ctx.fillStyle = '#ecfeff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`■ Card #${idx + 1}`, obs.x + obs.width / 2, obs.y + obs.height / 2);
+        }
+        ctx.restore();
+      });
+
+      // Render Text
+      ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#e4e4e7';
+      ctx.textBaseline = 'alphabetic';
+
+      for (let i = 0; i < layoutItems.length; i++) {
+        const item = layoutItems[i];
+        ctx.fillText(item.word, item.x, item.y);
+      }
+
+      ctx.restore();
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    animationFrameId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [activeTab, content, gap]);
+
+  // Pointer drag on preview canvas
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+
+    const currentObs = obstaclesRef.current;
+    for (let i = currentObs.length - 1; i >= 0; i--) {
+      const obs = currentObs[i];
+      let hits = false;
+
+      if (obs.shape === 'circle') {
+        const cx = obs.x + obs.width / 2;
+        const cy = obs.y + obs.height / 2;
+        const r = obs.width / 2;
+        hits = Math.hypot(px - cx, py - cy) <= r;
+      } else {
+        hits = px >= obs.x && px <= obs.x + obs.width && py >= obs.y && py <= obs.y + obs.height;
+      }
+
+      if (hits) {
+        isDraggingRef.current = i;
+        dragOffsetRef.current = { x: px - obs.x, y: py - obs.y };
+        canvas.setPointerCapture(e.pointerId);
+        break;
+      }
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const draggingIdx = isDraggingRef.current;
+    if (draggingIdx === null) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+
+    const currentWidth = containerWidthRef.current;
+    const targetObs = obstaclesRef.current[draggingIdx];
+    if (!targetObs) return;
+
+    const newX = Math.max(10, Math.min(currentWidth - targetObs.width - 10, px - dragOffsetRef.current.x));
+    const newY = Math.max(10, Math.min(350 - targetObs.height, py - dragOffsetRef.current.y));
+
+    const updated = [...obstaclesRef.current];
+    updated[draggingIdx] = { ...targetObs, x: newX, y: newY };
+    obstaclesRef.current = updated;
+    setObstacles(updated);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (isDraggingRef.current !== null) {
+      const canvas = canvasRef.current;
+      if (canvas && canvas.hasPointerCapture(e.pointerId)) {
+        canvas.releasePointerCapture(e.pointerId);
+      }
+      isDraggingRef.current = null;
+    }
+  };
 
   const handleTypeChange = (newType: DocumentType) => {
     setDocType(newType);
@@ -47,6 +253,10 @@ function EditorContent() {
 
   const handleSelectTemplate = (template: Template) => {
     setContent(template.content);
+  };
+
+  const handleInsertSnippet = (snippet: string) => {
+    setContent((prev) => prev + '\n' + snippet);
   };
 
   const handleCopy = () => {
@@ -67,6 +277,7 @@ function EditorContent() {
         updatedAt: new Date().toISOString(),
       };
       localStorage.setItem('pretext_docs', JSON.stringify([newDoc, ...existing]));
+      window.dispatchEvent(new Event('storage'));
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch (e) {
@@ -74,80 +285,85 @@ function EditorContent() {
     }
   };
 
+  // Export to PNG Image
+  const handleExportPNG = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pretext_${docType}_${Date.now()}.png`;
+    a.click();
+  };
+
+  // Export to HTML Standalone File
+  const handleExportHTML = () => {
+    const htmlContent = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Pretext Document - ${docType.toUpperCase()}</title>
+  <style>
+    body { background: #09090b; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; }
+    .card { max-width: 800px; margin: 0 auto; background: rgba(24,24,27,0.8); border: 1px solid rgba(139,92,246,0.3); border-radius: 20px; padding: 40px; box-shadow: 0 0 40px rgba(139,92,246,0.2); }
+    h1, h2, h3 { color: #ffffff; }
+    blockquote { border-left: 4px solid #8b5cf6; padding-left: 16px; margin: 16px 0; color: #d4d4d8; }
+    code { background: #18181b; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <pre style="white-space: pre-wrap; font-family: inherit;">${content}</pre>
+  </div>
+</body>
+</html>`;
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pretext_${docType}_${Date.now()}.html`;
+    a.click();
+  };
+
   const handleAddObstacle = (shape: 'rect' | 'circle') => {
     const newObs: Obstacle = {
-      x: Math.floor(Math.random() * 200) + 100,
-      y: Math.floor(Math.random() * 150) + 50,
-      width: shape === 'circle' ? 120 : 160,
-      height: shape === 'circle' ? 120 : 100,
+      x: Math.floor(Math.random() * 150) + 50,
+      y: Math.floor(Math.random() * 120) + 40,
+      width: shape === 'circle' ? 110 : 160,
+      height: shape === 'circle' ? 110 : 90,
       shape,
+      gap,
     };
-    setObstacles((prev) => [...prev, newObs]);
+    const updated = [...obstaclesRef.current, newObs];
+    obstaclesRef.current = updated;
+    setObstacles(updated);
   };
 
   const handleClearObstacles = () => {
+    obstaclesRef.current = [];
     setObstacles([]);
   };
 
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col font-sans">
-      {/* Top Navigation Bar */}
-      <header className="border-b border-white/10 bg-zinc-950/80 backdrop-blur-md px-6 py-4 sticky top-0 z-30 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 transition-colors text-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Назад</span>
-          </Link>
-          <div className="h-4 w-px bg-white/10" />
-          <h1 className="text-lg font-bold gradient-text flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-400" />
-            Pretext Studio
-          </h1>
-        </div>
+      {/* Universal Sticky Header */}
+      <Header />
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Скопировано' : 'Копировать'}</span>
-          </button>
-          <button
-            onClick={handleSaveToLocalStorage}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-medium text-xs shadow-lg shadow-violet-600/20 transition-all"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>{savedSuccess ? 'Сохранено!' : 'Сохранить'}</span>
-          </button>
-          <Link
-            href="/gallery"
-            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
-          >
-            Галерея
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Studio Workspace */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Sidebar: Controls & Templates */}
-        <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/50 p-6 flex flex-col gap-6 overflow-y-auto">
+      {/* Main Studio Workspace with Top Padding */}
+      <div className="flex-1 flex flex-col lg:flex-row pt-16 overflow-hidden">
+        {/* Left Sidebar: Formats, Templates & ToolBar */}
+        <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/60 p-6 flex flex-col gap-6 overflow-y-auto">
           {/* Document Type Selector */}
           <div>
-            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block">
-              Тип документа
+            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
+              Формат документа
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(['slide', 'card', 'cheatsheet'] as DocumentType[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => handleTypeChange(t)}
-                  className={`py-2 px-3 rounded-lg text-xs font-medium capitalize transition-all border ${
+                  className={`py-2 px-3 rounded-xl text-xs font-medium font-mono transition-all border ${
                     docType === t
                       ? 'bg-violet-600/30 border-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]'
                       : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'
@@ -159,10 +375,48 @@ function EditorContent() {
             </div>
           </div>
 
+          {/* Markdown Snippet Shortcuts */}
+          <div>
+            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-2.5 block font-mono">
+              Быстрые сниппеты
+            </label>
+            <div className="grid grid-cols-4 gap-1.5 font-mono text-[11px]">
+              <button
+                onClick={() => handleInsertSnippet('# Заголовок')}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
+                title="Заголовок H1"
+              >
+                <Heading className="w-3.5 h-3.5 text-violet-400" />
+                <span>H1</span>
+              </button>
+              <button
+                onClick={() => handleInsertSnippet('**Важный текст**')}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
+                title="Жирный"
+              >
+                <Bold className="w-3.5 h-3.5 text-cyan-400" />
+              </button>
+              <button
+                onClick={() => handleInsertSnippet('*Курсив*')}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
+                title="Курсив"
+              >
+                <Italic className="w-3.5 h-3.5 text-pink-400" />
+              </button>
+              <button
+                onClick={() => handleInsertSnippet('> Цитата-вынос')}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
+                title="Цитата"
+              >
+                <Quote className="w-3.5 h-3.5 text-amber-400" />
+              </button>
+            </div>
+          </div>
+
           {/* Preset Templates */}
           <div>
-            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block">
-              Готовые шаблоны
+            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
+              Готовые пресеты
             </label>
             <div className="space-y-2">
               {getTemplatesByType(docType).map((tpl) => (
@@ -180,70 +434,91 @@ function EditorContent() {
             </div>
           </div>
 
-          {/* Obstacle Controls for Dynamic Flow */}
-          <div className="pt-4 border-t border-white/10">
-            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block flex items-center justify-between">
-              <span>Препятствия потока</span>
-              <span className="text-[10px] text-violet-400 font-mono">{obstacles.length} шт.</span>
-            </label>
+          {/* Obstacle Controls */}
+          <div className="pt-4 border-t border-white/10 space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-zinc-400 font-semibold uppercase">Препятствия потока</span>
+              <span className="text-violet-400">{obstacles.length} шт.</span>
+            </div>
+
             <div className="flex gap-2">
               <button
                 onClick={() => handleAddObstacle('circle')}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/5 border border-white/10 text-xs hover:bg-white/10 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs hover:bg-white/10 transition-colors font-mono"
               >
                 <PlusCircle className="w-3.5 h-3.5 text-cyan-400" />
-                <span>+ Круг</span>
+                <span>+ Сфера</span>
               </button>
               <button
                 onClick={() => handleAddObstacle('rect')}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/5 border border-white/10 text-xs hover:bg-white/10 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs hover:bg-white/10 transition-colors font-mono"
               >
                 <PlusCircle className="w-3.5 h-3.5 text-pink-400" />
                 <span>+ Блок</span>
               </button>
             </div>
+
             {obstacles.length > 0 && (
               <button
                 onClick={handleClearObstacles}
-                className="w-full mt-2 flex items-center justify-center gap-1.5 py-1.5 text-xs text-rose-400/80 hover:text-rose-300 transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 transition-colors font-mono"
               >
                 <Trash2 className="w-3 h-3" />
-                <span>Сбросить фигуры</span>
+                <span>Сбросить препятствия</span>
               </button>
             )}
           </div>
+
+          {/* Gap Slider */}
+          <div className="pt-2">
+            <div className="flex justify-between text-xs font-mono mb-1.5">
+              <span className="text-zinc-400">Отступ (Gap)</span>
+              <span className="text-cyan-400 font-bold">{gap} px</span>
+            </div>
+            <input
+              type="range"
+              min="6"
+              max="28"
+              value={gap}
+              onChange={(e) => setGap(Number(e.target.value))}
+              className="w-full accent-cyan-400 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
+            />
+          </div>
         </aside>
 
-        {/* Center: Split Editor & Preview */}
-        <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-y-auto">
-          {/* Text Editor Area */}
-          <div className="flex flex-col h-full bg-[#0d0d12]">
+        {/* Center: Split Text Editor & Live Interactive Preview */}
+        <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden">
+          {/* Text Editor Pane */}
+          <div className="flex flex-col h-full bg-[#0c0c10]">
+            {/* Editor Toolbar Header */}
             <div className="px-6 py-3 border-b border-white/10 flex items-center justify-between bg-zinc-950/40">
               <span className="text-xs font-mono text-zinc-400 flex items-center gap-2">
                 <Code className="w-3.5 h-3.5 text-violet-400" />
-                Разметка Pretext
+                <span>Разметка документа</span>
               </span>
               <span className="text-[11px] text-zinc-500 font-mono">
                 {content.length} симв. | {content.split(/\s+/).filter(Boolean).length} слов
               </span>
             </div>
+
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="# Заголовок\n\nТекст для динамического обтекания..."
-              className="flex-1 w-full p-6 bg-transparent text-zinc-200 font-mono text-sm leading-relaxed resize-none focus:outline-none placeholder:text-zinc-700 min-h-[350px]"
+              placeholder="# Заголовок документа\n\nТекст с динамическим обтеканием..."
+              className="flex-1 w-full p-6 bg-transparent text-zinc-200 font-mono text-sm leading-relaxed resize-none focus:outline-none placeholder:text-zinc-700 min-h-[380px]"
               spellCheck={false}
             />
           </div>
 
-          {/* Live Preview Area */}
-          <div className="flex flex-col h-full bg-zinc-950/60 p-6 overflow-y-auto">
-            {/* View Mode Tabs */}
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+          {/* Live Preview Pane */}
+          <div className="flex flex-col h-full bg-zinc-950/70 p-6 overflow-y-auto">
+            {/* Top Preview Controls & Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-white/10">
+              {/* Tab Selector */}
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
                 <button
                   onClick={() => setActiveTab('flow')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold font-mono transition-all ${
                     activeTab === 'flow'
                       ? 'bg-violet-600 text-white shadow'
                       : 'text-zinc-400 hover:text-white'
@@ -253,9 +528,9 @@ function EditorContent() {
                   <span>Pretext Flow</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('editor')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    activeTab === 'editor'
+                  onClick={() => setActiveTab('card')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold font-mono transition-all ${
+                    activeTab === 'card'
                       ? 'bg-violet-600 text-white shadow'
                       : 'text-zinc-400 hover:text-white'
                   }`}
@@ -265,44 +540,63 @@ function EditorContent() {
                 </button>
               </div>
 
-              <span className="text-[11px] font-mono text-emerald-400/80 bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 rounded">
-                ⚡ 60 FPS Engine
-              </span>
+              {/* Action Buttons: Export & Save */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportPNG}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-cyan-300 hover:bg-white/10 transition-colors"
+                  title="Экспорт в PNG"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>PNG</span>
+                </button>
+
+                <button
+                  onClick={handleExportHTML}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-pink-300 hover:bg-white/10 transition-colors"
+                  title="Скачать HTML"
+                >
+                  <FileCode className="w-3.5 h-3.5" />
+                  <span>HTML</span>
+                </button>
+
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 transition-colors"
+                  title="Копировать разметку"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+
+                <button
+                  onClick={handleSaveToLocalStorage}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-xs shadow-md shadow-violet-600/30 transition-all"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{savedSuccess ? 'Сохранено!' : 'Сохранить'}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Renderer View */}
-            <div className="flex-1 flex items-center justify-center min-h-[380px]">
+            {/* Renderer Stage */}
+            <div ref={containerRef} className="flex-1 flex items-center justify-center min-h-[380px]">
               {activeTab === 'flow' ? (
-                <div className="w-full relative border border-white/10 rounded-2xl p-6 bg-zinc-900/40 backdrop-blur-md shadow-2xl min-h-[360px]">
-                  {/* Render simulated obstacles in preview */}
-                  {obstacles.map((obs, idx) => (
-                    <div
-                      key={idx}
-                      className="absolute border border-cyan-400/50 bg-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center pointer-events-none"
-                      style={{
-                        left: `${obs.x}px`,
-                        top: `${obs.y}px`,
-                        width: `${obs.width}px`,
-                        height: `${obs.height}px`,
-                        borderRadius: obs.shape === 'circle' ? '50%' : '12px',
-                      }}
-                    >
-                      <span className="text-[10px] font-mono text-cyan-200">
-                        {obs.shape === 'circle' ? '● Obstacle' : '■ Obstacle'}
-                      </span>
-                    </div>
-                  ))}
+                <div className="w-full relative border border-violet-500/30 rounded-3xl p-6 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[360px] overflow-hidden">
+                  <div className="text-[11px] font-mono text-zinc-500 mb-2 flex items-center justify-between">
+                    <span>Перетаскивайте фигуры мышкой</span>
+                    <span className="text-emerald-400 font-bold">120 FPS Active</span>
+                  </div>
 
-                  <PretextFlowRenderer
-                    content={content}
-                    obstacles={obstacles}
-                    containerWidth={540}
-                    fontSize={15}
-                    lineHeight={24}
+                  <canvas
+                    ref={canvasRef}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    className="block w-full h-[360px] cursor-grab active:cursor-grabbing touch-none"
                   />
                 </div>
               ) : (
-                <div className="w-full glass-card rounded-2xl p-8 border border-white/10 max-w-lg shadow-2xl">
+                <div className="w-full glass-card rounded-3xl p-8 border border-white/10 max-w-lg shadow-2xl">
                   <PretextRenderer content={content} />
                 </div>
               )}
@@ -316,7 +610,13 @@ function EditorContent() {
 
 export default function EditorPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#09090B] text-zinc-400 flex items-center justify-center">Загрузка Pretext Studio...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090B] text-zinc-400 flex items-center justify-center font-mono">
+          Загрузка Pretext Studio...
+        </div>
+      }
+    >
       <EditorContent />
     </Suspense>
   );

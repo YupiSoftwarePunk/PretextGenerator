@@ -1,64 +1,21 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  FileText,
-  LayoutGrid,
-  ScrollText,
-  Sparkles,
-  ArrowRight,
-  Code,
-  Zap,
-} from 'lucide-react';
-import { DocumentType } from '@/types';
+import { Sparkles, Zap } from 'lucide-react';
 import { FloatingObstacles } from '@/components/FloatingObstacles';
+import { Header } from '@/components/layout/Header';
 import { HeroMagneticText } from '@/components/showcase/HeroMagneticText';
 import { PlaygroundArena } from '@/components/showcase/PlaygroundArena';
 import { CyberEditorialSpread } from '@/components/showcase/CyberEditorialSpread';
 import { PerformanceBattle } from '@/components/showcase/PerformanceBattle';
-
-interface DocumentTypeCard {
-  type: DocumentType;
-  title: string;
-  description: string;
-  icon: typeof FileText;
-  gradient: string;
-}
-
-const documentTypes: DocumentTypeCard[] = [
-  {
-    type: 'slide',
-    title: 'Презентации и Слайды',
-    description: 'Интерактивные слайды с кинетической типографикой и переходами',
-    icon: LayoutGrid,
-    gradient: 'from-violet-500 to-purple-600',
-  },
-  {
-    type: 'card',
-    title: 'Обучающие Карточки',
-    description: 'Визуальные карточки и флэшкарды с идеальным обтеканием медиа',
-    icon: FileText,
-    gradient: 'from-cyan-500 to-blue-600',
-  },
-  {
-    type: 'cheatsheet',
-    title: 'Интерактивные Шпаргалки',
-    description: 'Многоколоночные структурированные справочники и гайды',
-    icon: ScrollText,
-    gradient: 'from-pink-500 to-rose-600',
-  },
-];
+import { InteractiveFormatsSection } from '@/components/showcase/InteractiveFormatsSection';
 
 export default function Home() {
-  const router = useRouter();
-
-  const handleCreateDocument = (type: DocumentType) => {
-    router.push(`/editor?type=${type}`);
-  };
-
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-100 relative overflow-hidden font-sans scroll-smooth">
+      {/* Universal Sticky Header */}
+      <Header showAnchorLinks={true} />
+
       {/* Background Radial Lights */}
       <div className="absolute inset-0 radial-glow pointer-events-none" />
 
@@ -75,62 +32,13 @@ export default function Home() {
       {/* Floating Animated Orbs */}
       <FloatingObstacles />
 
-      <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Sticky Header */}
-        <header className="w-full py-4 px-6 backdrop-blur-xl bg-zinc-950/70 border-b border-white/10 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] group-hover:scale-105 transition-transform">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-extrabold gradient-text leading-none">
-                  Pretext Core
-                </h1>
-                <span className="text-[10px] font-mono text-zinc-400">120 FPS Typography</span>
-              </div>
-            </Link>
-
-            {/* In-page Navigation Links */}
-            <nav className="hidden md:flex items-center gap-6 text-xs font-mono font-medium text-zinc-400">
-              <a href="#sandbox" className="hover:text-cyan-300 transition-colors">
-                Песочница
-              </a>
-              <a href="#magazine" className="hover:text-violet-300 transition-colors">
-                Журнал
-              </a>
-              <a href="#benchmark" className="hover:text-emerald-300 transition-colors">
-                Бенчмарк
-              </a>
-              <a href="#formats" className="hover:text-pink-300 transition-colors">
-                Форматы
-              </a>
-            </nav>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              <Link
-                href="/gallery"
-                className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-zinc-300 hover:bg-white/10 transition-colors"
-              >
-                Галерея
-              </Link>
-              <Link
-                href="/editor"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-xs shadow-lg shadow-violet-600/30 transition-all hover:scale-105"
-              >
-                <Code className="w-3.5 h-3.5" />
-                <span>Pretext Studio</span>
-              </Link>
-            </div>
-          </div>
-        </header>
-
+      <div className="relative z-10 flex flex-col min-h-screen pt-16">
         {/* Main Showcase Modules */}
         <main className="flex-1 w-full space-y-12">
           {/* Module 1: Interactive Hero with Magnetic Forcefield */}
-          <HeroMagneticText />
+          <div id="hero">
+            <HeroMagneticText />
+          </div>
 
           {/* Module 2: Playground Arena (Interactive Sandbox) */}
           <div id="sandbox">
@@ -147,61 +55,10 @@ export default function Home() {
             <PerformanceBattle />
           </div>
 
-          {/* Module 5: Document Formats Grid */}
-          <section id="formats" className="w-full max-w-7xl mx-auto px-6 py-20">
-            <div className="text-center mb-14 space-y-3">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-mono">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>DOCUMENT GENERATOR</span>
-              </div>
-              <h2 className="text-4xl sm:text-5xl font-extrabold text-white">
-                Создавайте в любом формате
-              </h2>
-              <p className="text-zinc-400 max-w-2xl mx-auto text-base">
-                Выберите подходящий формат для презентаций, карточек или шпаргалок и экспортируйте в высоком качестве.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {documentTypes.map((docType, index) => {
-                const Icon = docType.icon;
-
-                return (
-                  <button
-                    key={docType.type}
-                    onClick={() => handleCreateDocument(docType.type)}
-                    className="group glass-card glass-card-hover text-left p-8 rounded-3xl border border-white/10 hover:border-violet-500/50 hover:shadow-[0_0_35px_rgba(139,92,246,0.25)] transition-all flex flex-col justify-between"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div>
-                      {/* Icon */}
-                      <div
-                        className={`inline-flex p-4 rounded-2xl mb-6 bg-gradient-to-br ${docType.gradient} shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform duration-300`}
-                      >
-                        <Icon className="w-7 h-7 text-white" strokeWidth={1.75} />
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-violet-300 transition-colors">
-                        {docType.title}
-                      </h3>
-
-                      {/* Description */}
-                      <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-                        {docType.description}
-                      </p>
-                    </div>
-
-                    {/* CTA */}
-                    <div className="flex items-center gap-2 text-xs font-mono font-semibold text-violet-400 group-hover:translate-x-1 transition-transform">
-                      <span>Создать документ</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          {/* Module 5: Interactive Formats (Slide Player, 3D Flip Card, Live Cheatsheet) */}
+          <div id="formats">
+            <InteractiveFormatsSection />
+          </div>
 
           {/* Module 6: Architecture Spec Card */}
           <section className="w-full max-w-5xl mx-auto px-6 pb-24">
