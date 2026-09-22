@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { PretextEngine, Obstacle, WordLayoutItem } from '@/lib/PretextEngine';
 import { useIsMounted } from '@/hooks/useIsMounted';
-import { BookOpen, Quote, Move } from 'lucide-react';
+import { BookOpen, Quote, Move, Cpu, Sparkles, RefreshCw } from 'lucide-react';
 
 interface ArticleTopic {
   title: string;
@@ -40,25 +40,26 @@ const ARTICLES: Record<string, ArticleTopic> = {
 
 export const CyberEditorialSpread: React.FC = () => {
   const isMounted = useIsMounted();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [activeArticleKey, setActiveArticleKey] = useState<'future' | 'quantum'>('future');
   const [theme, setTheme] = useState<'violet' | 'cyan' | 'emerald'>('violet');
 
-  // Interactive floating pull-quote obstacle
+  // Floating media card obstacle state (relative inside the text stage)
   const [pullQuotePos, setPullQuotePos] = useState<Obstacle>({
-    x: 240,
-    y: 70,
-    width: 250,
-    height: 150,
+    x: 220,
+    y: 45,
+    width: 270,
+    height: 165,
     shape: 'rect',
     gap: 16,
   });
 
+  const [isDragging, setIsDragging] = useState(false);
+
   const pullQuoteRef = useRef<Obstacle>(pullQuotePos);
-  const isDraggingRef = useRef<boolean>(false);
-  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragStartOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerWidthRef = useRef<number>(750);
   const engineRef = useRef<PretextEngine | null>(null);
 
@@ -69,8 +70,8 @@ export const CyberEditorialSpread: React.FC = () => {
   }, [pullQuotePos]);
 
   const updateWidth = useCallback(() => {
-    if (containerRef.current) {
-      const w = containerRef.current.clientWidth - 48;
+    if (stageRef.current) {
+      const w = stageRef.current.clientWidth;
       containerWidthRef.current = Math.max(300, w);
       engineRef.current = new PretextEngine({
         containerWidth: containerWidthRef.current,
@@ -88,7 +89,7 @@ export const CyberEditorialSpread: React.FC = () => {
     return () => window.removeEventListener('resize', updateWidth);
   }, [isMounted, updateWidth]);
 
-  // Main 60-120 FPS Render Loop
+  // Main 60-120 FPS Canvas Render Loop
   useEffect(() => {
     if (!isMounted) return;
 
@@ -96,7 +97,8 @@ export const CyberEditorialSpread: React.FC = () => {
 
     const render = () => {
       const canvas = canvasRef.current;
-      if (!canvas) {
+      const stage = stageRef.current;
+      if (!canvas || !stage) {
         animationFrameId = requestAnimationFrame(render);
         return;
       }
@@ -121,7 +123,6 @@ export const CyberEditorialSpread: React.FC = () => {
 
       const activeObs = [pullQuoteRef.current];
 
-      // Pretext Layout calculation
       if (!engineRef.current || engineRef.current['config']?.containerWidth !== currentWidth) {
         engineRef.current = new PretextEngine({
           containerWidth: currentWidth,
@@ -137,7 +138,7 @@ export const CyberEditorialSpread: React.FC = () => {
         pullQuoteRef.current.gap ?? 16
       );
 
-      // Render flowing article text
+      // Render flowing article text words
       ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = '#d4d4d8';
       ctx.textBaseline = 'alphabetic';
@@ -155,48 +156,61 @@ export const CyberEditorialSpread: React.FC = () => {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isMounted, article.text]);
 
-  // Pointer Drag on the Pull-Quote Card
+  // Robust Pointer Drag Handlers attached DIRECTLY to the media card
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const px = e.clientX - rect.left - 24;
-    const py = e.clientY - rect.top - 120;
+    e.preventDefault();
+    e.stopPropagation();
 
-    const obs = pullQuoteRef.current;
-    if (px >= obs.x && px <= obs.x + obs.width && py >= obs.y && py <= obs.y + obs.height) {
-      isDraggingRef.current = true;
-      dragOffsetRef.current = { x: px - obs.x, y: py - obs.y };
-      e.currentTarget.setPointerCapture(e.pointerId);
-    }
+    const target = e.currentTarget;
+    target.setPointerCapture(e.pointerId);
+
+    const currentObs = pullQuoteRef.current;
+    dragStartOffset.current = {
+      x: e.clientX - currentObs.x,
+      y: e.clientY - currentObs.y,
+    };
+
+    setIsDragging(true);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const px = e.clientX - rect.left - 24;
-    const py = e.clientY - rect.top - 120;
+    if (!isDragging) return;
+    e.preventDefault();
 
-    const currentW = containerWidthRef.current;
-    const obs = pullQuoteRef.current;
+    const stage = stageRef.current;
+    if (!stage) return;
 
-    const newX = Math.max(10, Math.min(currentW - obs.width - 10, px - dragOffsetRef.current.x));
-    const newY = Math.max(10, Math.min(340 - obs.height, py - dragOffsetRef.current.y));
+    const currentWidth = containerWidthRef.current;
+    const currentObs = pullQuoteRef.current;
 
-    const updated: Obstacle = { ...obs, x: newX, y: newY };
+    const newX = Math.max(10, Math.min(currentWidth - currentObs.width - 10, e.clientX - dragStartOffset.current.x));
+    const newY = Math.max(10, Math.min(350 - currentObs.height, e.clientY - dragStartOffset.current.y));
+
+    const updated: Obstacle = { ...currentObs, x: newX, y: newY };
     pullQuoteRef.current = updated;
     setPullQuotePos(updated);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isDraggingRef.current) {
+    if (isDragging) {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
       }
-      isDraggingRef.current = false;
+      setIsDragging(false);
     }
+  };
+
+  const handleResetPosition = () => {
+    const defaultPos: Obstacle = {
+      x: Math.max(120, Math.floor(containerWidthRef.current / 2 - 135)),
+      y: 50,
+      width: 270,
+      height: 165,
+      shape: 'rect',
+      gap: 16,
+    };
+    pullQuoteRef.current = defaultPos;
+    setPullQuotePos(defaultPos);
   };
 
   const themeColors = {
@@ -204,19 +218,22 @@ export const CyberEditorialSpread: React.FC = () => {
       border: 'border-violet-500/40',
       glow: 'shadow-[0_0_40px_rgba(139,92,246,0.2)]',
       accent: 'text-violet-400',
-      bgCard: 'bg-violet-950/40',
+      bgCard: 'bg-violet-950/60',
+      tagBg: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
     },
     cyan: {
       border: 'border-cyan-500/40',
       glow: 'shadow-[0_0_40px_rgba(6,182,212,0.2)]',
       accent: 'text-cyan-400',
-      bgCard: 'bg-cyan-950/40',
+      bgCard: 'bg-cyan-950/60',
+      tagBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     },
     emerald: {
       border: 'border-emerald-500/40',
       glow: 'shadow-[0_0_40px_rgba(16,185,129,0.2)]',
       accent: 'text-emerald-400',
-      bgCard: 'bg-emerald-950/40',
+      bgCard: 'bg-emerald-950/60',
+      tagBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     },
   }[theme];
 
@@ -234,30 +251,29 @@ export const CyberEditorialSpread: React.FC = () => {
           Журнальный разворот будущего
         </h2>
         <p className="text-zinc-400 max-w-2xl mx-auto text-base">
-          Премиальная редакционная верстка с динамическими выносными цитатами и перетеканием текста вокруг интерактивных врезок.
+          Премиальная верстка с динамической медиа-врезкой. Захватите карточку мышкой и перемещайте её в любую точку разворота.
         </p>
       </div>
 
       {/* Magazine Container */}
       <div
-        ref={containerRef}
         className={`relative w-full glass-card rounded-3xl p-8 sm:p-12 border ${themeColors.border} ${themeColors.glow} backdrop-blur-2xl overflow-hidden transition-all duration-500`}
       >
-        {/* Magazine Editorial Top Bar */}
+        {/* Top Control Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b border-white/10 text-xs font-mono">
           <div className="flex items-center gap-3">
-            <span className={`px-2.5 py-1 rounded bg-white/5 border border-white/10 font-bold ${themeColors.accent}`}>
+            <span className={`px-2.5 py-1 rounded-lg border font-bold ${themeColors.tagBg}`}>
               {article.category}
             </span>
             <span className="text-zinc-500">{article.readTime}</span>
           </div>
 
-          {/* Topic Switcher & Theme Selector */}
           <div className="flex items-center gap-4">
-            <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+            {/* Topic Switcher */}
+            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
               <button
                 onClick={() => setActiveArticleKey('future')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
                   activeArticleKey === 'future'
                     ? 'bg-violet-600 text-white shadow'
                     : 'text-zinc-400 hover:text-white'
@@ -267,7 +283,7 @@ export const CyberEditorialSpread: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveArticleKey('quantum')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
                   activeArticleKey === 'quantum'
                     ? 'bg-violet-600 text-white shadow'
                     : 'text-zinc-400 hover:text-white'
@@ -277,76 +293,102 @@ export const CyberEditorialSpread: React.FC = () => {
               </button>
             </div>
 
+            {/* Reset Position Button */}
+            <button
+              onClick={handleResetPosition}
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white border border-white/10 transition-colors"
+              title="Сбросить позицию врезки"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+
             {/* Theme picker */}
             <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
               <button
                 onClick={() => setTheme('violet')}
-                className={`w-4 h-4 rounded-full bg-violet-500 transition-transform ${theme === 'violet' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'}`}
+                className={`w-4 h-4 rounded-full bg-violet-500 transition-transform ${
+                  theme === 'violet' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
+                }`}
                 title="Неоновый фиолетовый"
               />
               <button
                 onClick={() => setTheme('cyan')}
-                className={`w-4 h-4 rounded-full bg-cyan-400 transition-transform ${theme === 'cyan' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'}`}
+                className={`w-4 h-4 rounded-full bg-cyan-400 transition-transform ${
+                  theme === 'cyan' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
+                }`}
                 title="Кибер-голубой"
               />
               <button
                 onClick={() => setTheme('emerald')}
-                className={`w-4 h-4 rounded-full bg-emerald-400 transition-transform ${theme === 'emerald' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'}`}
-                title="Изумрудный матричный"
+                className={`w-4 h-4 rounded-full bg-emerald-400 transition-transform ${
+                  theme === 'emerald' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
+                }`}
+                title="Изумрудный"
               />
             </div>
           </div>
         </div>
 
-        {/* Magazine Title & Subtitle */}
-        <div className="mb-8 space-y-2">
+        {/* Title */}
+        <div className="mb-6 space-y-1.5">
           <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
             {article.title}
           </h3>
-          <p className="text-zinc-400 text-base font-medium max-w-xl">
+          <p className="text-zinc-400 text-sm sm:text-base font-medium max-w-xl">
             {article.subtitle}
           </p>
         </div>
 
-        {/* Editorial Body: Interactive Canvas + Overlaid Draggable Pull Quote Card */}
+        {/* Text Stage with Draggable Media Obstacle Card */}
         <div
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          className="relative w-full min-h-[360px] h-[360px] cursor-default select-none touch-none"
+          ref={stageRef}
+          className="relative w-full min-h-[360px] h-[360px] cursor-default select-none overflow-hidden rounded-2xl bg-zinc-950/40 p-4 border border-white/5"
         >
           {/* Flowing Text Canvas */}
           <canvas ref={canvasRef} className="absolute inset-0 block pointer-events-none" />
 
-          {/* Interactive Floating Glass Pull-Quote Obstacle */}
+          {/* DRAGGABLE MEDIA PULL-QUOTE CARD */}
           <div
-            className={`absolute z-20 cursor-grab active:cursor-grabbing rounded-2xl p-5 border ${themeColors.border} ${themeColors.bgCard} backdrop-blur-xl shadow-2xl flex flex-col justify-between select-none group`}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            className={`absolute z-30 cursor-grab active:cursor-grabbing rounded-2xl p-5 border ${themeColors.border} ${themeColors.bgCard} backdrop-blur-2xl shadow-2xl flex flex-col justify-between select-none transition-shadow duration-200 touch-none ${
+              isDragging ? 'scale-[1.02] shadow-[0_0_35px_rgba(139,92,246,0.4)] border-white/40' : ''
+            }`}
             style={{
               left: `${pullQuotePos.x}px`,
               top: `${pullQuotePos.y}px`,
               width: `${pullQuotePos.width}px`,
               height: `${pullQuotePos.height}px`,
-              transition: 'box-shadow 0.2s ease',
             }}
           >
-            {/* Draggable indicator & icon */}
+            {/* Top Bar with Media Icon & Drag Hint */}
             <div className="flex items-center justify-between mb-2">
-              <Quote className={`w-5 h-5 ${themeColors.accent}`} />
-              <span className="text-[10px] font-mono text-zinc-400 flex items-center gap-1 group-hover:text-white transition-colors">
-                <Move className="w-3 h-3" />
-                Перетащите врезку
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-white">
+                <Cpu className={`w-4 h-4 ${themeColors.accent}`} />
+                <span>MEDIA MODULE</span>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-300 bg-white/10 px-2 py-0.5 rounded flex items-center gap-1">
+                <Move className="w-3 h-3 text-cyan-400" />
+                <span>Тяните мышкой</span>
               </span>
             </div>
 
             {/* Quote Body */}
-            <p className="text-xs text-zinc-200 font-medium italic leading-relaxed line-clamp-3">
+            <p className="text-xs text-zinc-100 font-medium italic leading-relaxed line-clamp-3">
               {article.quote}
             </p>
 
-            {/* Author footnote */}
+            {/* Footnote */}
             <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-mono">
-              <span className="text-zinc-400">{article.author}</span>
-              <span className="text-emerald-400">Pretext 120fps</span>
+              <span className="text-zinc-400 flex items-center gap-1">
+                <Quote className="w-3 h-3 text-violet-400" />
+                {article.author}
+              </span>
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                120 FPS
+              </span>
             </div>
           </div>
         </div>
