@@ -60,10 +60,10 @@ export class PretextEngine {
 
   constructor(config?: Partial<EngineConfig>) {
     this.config = {
-      containerWidth: config?.containerWidth ?? 800,
+      containerWidth: Math.max(100, config?.containerWidth ?? 800),
       fontSize: config?.fontSize ?? 16,
       fontFamily: config?.fontFamily ?? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      lineHeight: config?.lineHeight ?? 24,
+      lineHeight: config?.lineHeight ?? 26,
     };
 
     if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.createElement) {
@@ -73,11 +73,11 @@ export class PretextEngine {
       this.canvas = new OffscreenCanvas(1, 1);
       this.ctx = this.canvas.getContext('2d')!;
     } else {
-      // Fallback for SSR/node environments without canvas
+      // Fallback for SSR/node environments
       this.canvas = {} as HTMLCanvasElement;
       this.ctx = {
         measureText: (text: string) => ({
-          width: text.length * (this.config.fontSize * 0.6),
+          width: text.length * (this.config.fontSize * 0.58),
           actualBoundingBoxAscent: this.config.fontSize * 0.8,
           actualBoundingBoxDescent: this.config.fontSize * 0.2,
         }),
@@ -124,7 +124,7 @@ export class PretextEngine {
 
     const measurement: WordMeasurement = {
       word,
-      width: metrics.width,
+      width: Math.ceil(metrics.width),
       height,
     };
 
@@ -141,14 +141,19 @@ export class PretextEngine {
   }
 
   /**
-   * Get available horizontal ranges at a given Y position, avoiding obstacles
+   * Calculate exact horizontal ranges avoiding obstacles at vertical slice [lineTop, lineBottom]
    */
   public getAvailableRanges(
-    y: number,
+    baselineY: number,
     obstacles: Obstacle[],
-    defaultGap = 12
+    defaultGap = 14
   ): AvailableRange[] {
     const occupied: AvailableRange[] = [];
+    const containerW = this.config.containerWidth;
+
+    // The line slice covers from top of characters to bottom of descenders
+    const lineTop = baselineY - this.config.fontSize;
+    const lineBottom = baselineY + 4;
 
     for (const obstacle of obstacles) {
       const gap = obstacle.gap ?? defaultGap;
@@ -156,36 +161,51 @@ export class PretextEngine {
 
       if (shape === 'circle') {
         const radius = Math.max(obstacle.width, obstacle.height) / 2;
-        const centerY = obstacle.y + obstacle.height / 2;
+        const effectiveR = radius + gap;
         const centerX = obstacle.x + obstacle.width / 2;
-        const verticalDistance = Math.abs(y - centerY);
+        const centerY = obstacle.y + obstacle.height / 2;
 
-        if (verticalDistance <= radius) {
-          const horizontalExtent = Math.sqrt(radius * radius - verticalDistance * verticalDistance);
-          occupied.push({
-            start: Math.max(0, centerX - horizontalExtent - gap),
-            end: Math.min(this.config.containerWidth, centerX + horizontalExtent + gap),
-          });
+        let dyClosest = 0;
+        if (centerY < lineTop) {
+          dyClosest = lineTop - centerY;
+        } else if (centerY > lineBottom) {
+          dyClosest = centerY - lineBottom;
+        } else {
+          dyClosest = 0;
+        }
+
+        if (dyClosest <= effectiveR) {
+          const horizontalExtent = Math.sqrt(effectiveR * effectiveR - dyClosest * dyClosest);
+          const start = Math.max(0, centerX - horizontalExtent);
+          const end = Math.min(containerW, centerX + horizontalExtent);
+          if (end > start) {
+            occupied.push({ start, end });
+          }
         }
       } else {
         // Rectangle
-        if (y >= obstacle.y - gap && y <= obstacle.y + obstacle.height + gap) {
-          occupied.push({
-            start: Math.max(0, obstacle.x - gap),
-            end: Math.min(this.config.containerWidth, obstacle.x + obstacle.width + gap),
-          });
+        const obsTop = obstacle.y - gap;
+        const obsBottom = obstacle.y + obstacle.height + gap;
+
+        // Check if vertical ranges overlap
+        if (lineBottom >= obsTop && lineTop <= obsBottom) {
+          const start = Math.max(0, obstacle.x - gap);
+          const end = Math.min(containerW, obstacle.x + obstacle.width + gap);
+          if (end > start) {
+            occupied.push({ start, end });
+          }
         }
       }
     }
 
     if (occupied.length === 0) {
-      return [{ start: 0, end: this.config.containerWidth }];
+      return [{ start: 0, end: containerW }];
     }
 
     // Sort occupied ranges by start position
     occupied.sort((a, b) => a.start - b.start);
 
-    // Merge overlapping ranges
+    // Merge overlapping occupied ranges
     const merged: AvailableRange[] = [];
     for (const range of occupied) {
       if (merged.length === 0) {
@@ -200,39 +220,38 @@ export class PretextEngine {
       }
     }
 
-    // Calculate available free ranges between occupied slots
+    // Compute free ranges
     const ranges: AvailableRange[] = [];
     let currentX = 0;
 
     for (const occ of merged) {
       if (occ.start > currentX) {
         const span = occ.start - currentX;
-        // Only consider ranges wide enough to fit characters (e.g. > 20px)
-        if (span >= 20) {
+        if (span >= 24) {
           ranges.push({ start: currentX, end: occ.start });
         }
       }
       currentX = Math.max(currentX, occ.end);
     }
 
-    if (currentX < this.config.containerWidth) {
-      const span = this.config.containerWidth - currentX;
-      if (span >= 20) {
-        ranges.push({ start: currentX, end: this.config.containerWidth });
+    if (currentX < containerW) {
+      const span = containerW - currentX;
+      if (span >= 24) {
+        ranges.push({ start: currentX, end: containerW });
       }
     }
 
-    return ranges.length > 0 ? ranges : [{ start: 0, end: this.config.containerWidth }];
+    return ranges.length > 0 ? ranges : [];
   }
 
   /**
    * Calculate text lines that flow around obstacles
    */
-  public calculateLines(content: string, obstacles: Obstacle[], gap = 12): TextLine[] {
+  public calculateLines(content: string, obstacles: Obstacle[], gap = 14): TextLine[] {
     const lines: TextLine[] = [];
     const words = content.split(/\s+/).filter((word) => word.length > 0);
 
-    let currentY = this.config.fontSize;
+    let currentY = this.config.fontSize + 8;
     let wordIndex = 0;
 
     while (wordIndex < words.length) {
@@ -261,8 +280,6 @@ export class PretextEngine {
       }
 
       currentY += this.config.lineHeight;
-
-      // Safety limit to avoid runaway loops
       if (currentY > 20000) break;
     }
 
@@ -270,14 +287,14 @@ export class PretextEngine {
   }
 
   /**
-   * Calculate word-level layout for smooth per-word animations
+   * Calculate word-level layout for high-performance rendering & animations
    */
-  public calculateWordLayout(content: string, obstacles: Obstacle[], gap = 12): WordLayoutItem[] {
+  public calculateWordLayout(content: string, obstacles: Obstacle[], gap = 14): WordLayoutItem[] {
     const layoutItems: WordLayoutItem[] = [];
     const words = content.split(/\s+/).filter((w) => w.length > 0);
     const spaceWidth = this.measureWord(' ').width;
 
-    let currentY = this.config.fontSize;
+    let currentY = this.config.fontSize + 8;
     let wordIndex = 0;
 
     while (wordIndex < words.length) {
@@ -293,22 +310,21 @@ export class PretextEngine {
         while (wordIndex < words.length) {
           const word = words[wordIndex];
           const wordMeas = this.measureWord(word);
-          const isFirstInSlot = lineX === range.start;
-          const needed = isFirstInSlot ? wordMeas.width : spaceWidth + wordMeas.width;
+          const isFirst = lineX === range.start;
+          const needed = isFirst ? wordMeas.width : spaceWidth + wordMeas.width;
 
           if (consumedWidth + needed <= availableWidth) {
-            const wordX = isFirstInSlot ? lineX : lineX + spaceWidth;
+            const wordX = isFirst ? lineX : lineX + spaceWidth;
             layoutItems.push({
               word,
-              x: wordX,
-              y: currentY,
+              x: Math.round(wordX),
+              y: Math.round(currentY),
               width: wordMeas.width,
             });
             lineX = wordX + wordMeas.width;
             consumedWidth += needed;
             wordIndex++;
           } else {
-            // Word doesn't fit in current slot
             break;
           }
         }
@@ -322,7 +338,7 @@ export class PretextEngine {
   }
 
   /**
-   * Fit as many words as possible in a given horizontal range
+   * Fit words in horizontal slot
    */
   private fitWordsInRange(
     words: string[],
@@ -369,7 +385,7 @@ export class PretextEngine {
     const y = obstacle.y - padding;
     const w = obstacle.width + padding * 2;
     const h = obstacle.height + padding * 2;
-    const r = 8; // border radius
+    const r = 10; // border radius
 
     return `
       M ${x + r} ${y}

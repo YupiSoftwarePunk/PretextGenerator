@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useIsMounted } from '@/hooks/useIsMounted';
 
 // Color palette matching the project
 const COLORS = [
@@ -33,9 +34,11 @@ function createInitialOrbs(): FloatingOrb[] {
 }
 
 export const FloatingObstacles: React.FC = () => {
+  const isMounted = useIsMounted();
   const [orbs, setOrbs] = useState<FloatingOrb[]>(createInitialOrbs);
 
   useEffect(() => {
+    if (!isMounted) return;
     let animationFrame: number;
 
     const animate = () => {
@@ -70,7 +73,9 @@ export const FloatingObstacles: React.FC = () => {
 
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, []);
+  }, [isMounted]);
+
+  if (!isMounted) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
