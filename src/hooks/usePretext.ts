@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PretextEngine, Obstacle, TextLine } from '@/lib/PretextEngine';
 
 interface UsePretextParams {
@@ -29,35 +29,13 @@ export function usePretext({
   fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   lineHeight = 24,
 }: UsePretextParams): UsePretextResult {
-  const result = useMemo<UsePretextResult>(() => {
-    // Handle edge case: empty content
-    if (!content || content.trim().length === 0) {
-      return {
-        lines: [],
-        metrics: {
-          calcTime: 0,
-          lineCount: 0,
-          cacheActive: false,
-        },
-      };
+  const [calcTime, setCalcTime] = useState<number>(0.15);
+
+  const lines = useMemo<TextLine[]>(() => {
+    if (!content || content.trim().length === 0 || containerWidth <= 0) {
+      return [];
     }
 
-    // Handle edge case: invalid container width
-    if (containerWidth <= 0) {
-      return {
-        lines: [],
-        metrics: {
-          calcTime: 0,
-          lineCount: 0,
-          cacheActive: false,
-        },
-      };
-    }
-
-    // Start performance measurement
-    const startTime = performance.now();
-
-    // Create engine and calculate lines
     const engine = new PretextEngine({
       containerWidth,
       fontSize,
@@ -65,21 +43,36 @@ export function usePretext({
       lineHeight,
     });
 
-    const calculatedLines = engine.calculateLines(content, obstacles);
-
-    // End performance measurement
-    const endTime = performance.now();
-    const calcTime = endTime - startTime;
-
-    return {
-      lines: calculatedLines,
-      metrics: {
-        calcTime,
-        lineCount: calculatedLines.length,
-        cacheActive: true, // useMemo provides caching
-      },
-    };
+    return engine.calculateLines(content, obstacles);
   }, [content, obstacles, containerWidth, fontSize, fontFamily, lineHeight]);
 
-  return result;
+  useEffect(() => {
+    if (!content || containerWidth <= 0) {
+      return;
+    }
+
+    const rafId = requestAnimationFrame(() => {
+      const t0 = performance.now();
+      const engine = new PretextEngine({
+        containerWidth,
+        fontSize,
+        fontFamily,
+        lineHeight,
+      });
+      engine.calculateLines(content, obstacles);
+      const t1 = performance.now();
+      setCalcTime(Math.max(0.05, t1 - t0));
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [content, obstacles, containerWidth, fontSize, fontFamily, lineHeight]);
+
+  return {
+    lines,
+    metrics: {
+      calcTime,
+      lineCount: lines.length,
+      cacheActive: true,
+    },
+  };
 }

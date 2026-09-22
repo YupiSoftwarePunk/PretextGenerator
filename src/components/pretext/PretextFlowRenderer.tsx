@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useRef, useEffect, useState } from 'react';
-import { PretextEngine, Obstacle, TextLine } from '@/lib/PretextEngine';
+import { useMemo, useRef, useEffect } from 'react';
+import { PretextEngine, Obstacle } from '@/lib/PretextEngine';
 
 interface PretextFlowRendererProps {
   content: string;
@@ -29,11 +29,10 @@ export default function PretextFlowRenderer({
   style,
 }: PretextFlowRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [lines, setLines] = useState<TextLine[]>([]);
-  const [containerHeight, setContainerHeight] = useState<number>(0);
 
-  // Calculate text lines using PretextEngine
-  const calculatedLines = useMemo(() => {
+  // Calculate text lines using PretextEngine (pure calculation during render)
+  const lines = useMemo(() => {
+    if (containerWidth <= 0 || !content) return [];
     const engine = new PretextEngine({
       containerWidth,
       fontSize,
@@ -44,44 +43,36 @@ export default function PretextFlowRenderer({
     return engine.calculateLines(content, obstacles);
   }, [content, obstacles, containerWidth, fontSize, fontFamily, lineHeight]);
 
-  // Update lines and calculate container height
-  useEffect(() => {
-    setLines(calculatedLines);
-
-    // Calculate height based on last line position
-    const maxY = calculatedLines.reduce((max, line) => Math.max(max, line.y), 0);
+  // Calculate container height based on lines and obstacles
+  const containerHeight = useMemo(() => {
+    const maxY = lines.reduce((max, line) => Math.max(max, line.y), 0);
     const obstacleMaxY = obstacles.reduce(
       (max, obs) => Math.max(max, obs.y + obs.height),
       0
     );
-    setContainerHeight(Math.max(maxY + lineHeight, obstacleMaxY) + 20);
-  }, [calculatedLines, obstacles, lineHeight]);
+    return Math.max(maxY + lineHeight, obstacleMaxY) + 20;
+  }, [lines, obstacles, lineHeight]);
 
-  // Render to canvas
+  // Render to canvas if canvas mode is chosen
   useEffect(() => {
-    if (renderMode === 'canvas' && canvasRef.current) {
+    if (renderMode === 'canvas' && canvasRef.current && containerWidth > 0 && containerHeight > 0) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Set canvas size
       canvas.width = containerWidth;
       canvas.height = containerHeight;
 
-      // Clear canvas
       ctx.clearRect(0, 0, containerWidth, containerHeight);
-
-      // Set text style
       ctx.font = `${fontSize}px ${fontFamily}`;
-      ctx.fillStyle = exportMode ? '#f0f0f0' : '#f0f0f0';
+      ctx.fillStyle = '#f0f0f0';
       ctx.textBaseline = 'alphabetic';
 
-      // Draw text lines
       lines.forEach((line) => {
         ctx.fillText(line.text, line.x, line.y);
       });
     }
-  }, [renderMode, lines, containerWidth, containerHeight, fontSize, fontFamily, exportMode]);
+  }, [renderMode, lines, containerWidth, containerHeight, fontSize, fontFamily]);
 
   // Generate neon contour paths
   const contourPaths = useMemo(() => {

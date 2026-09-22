@@ -27,7 +27,11 @@ export const metadata: Metadata = {
   description: "Генератор визуальных карточек, шпаргалок и презентаций на базе Pretext",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"

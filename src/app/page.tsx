@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { FileText, LayoutGrid, ScrollText, Sparkles, ArrowRight } from 'lucide-react';
 import { DocumentType } from '@/types';
 import { JournalVisualizer } from '@/components/JournalVisualizer';
+import { FloatingObstacles } from '@/components/FloatingObstacles';
 
 interface DocumentTypeCard {
   type: DocumentType;
