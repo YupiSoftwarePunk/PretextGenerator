@@ -95,31 +95,6 @@ export default function Home() {
             </div>
           </section>
         </main>
-
-        {/* Footer */}
-        <footer className="w-full py-10 px-6 backdrop-blur-xl border-t border-white/10 bg-zinc-950/80">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-lg bg-violet-600 flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 text-white" />
-              </div>
-              <span className="text-sm font-bold text-white">Pretext Technology Showcase</span>
-            </div>
-
-            <p className="text-xs text-zinc-500 text-center">
-              Развернуто на GitHub Pages • Next.js 16 Static Export • Canvas Hardware Acceleration
-            </p>
-
-            <div className="flex items-center gap-4 text-zinc-400 text-xs font-mono">
-              <Link href="/editor" className="hover:text-white transition-colors">
-                Студия
-              </Link>
-              <Link href="/gallery" className="hover:text-white transition-colors">
-                Галерея
-              </Link>
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
   );
