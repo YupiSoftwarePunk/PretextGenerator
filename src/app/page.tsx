@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { FloatingObstacles } from '@/components/FloatingObstacles';
 import { Header } from '@/components/layout/Header';
 import { HeroMagneticText } from '@/components/showcase/HeroMagneticText';

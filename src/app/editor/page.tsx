@@ -21,7 +21,6 @@ import {
   Zap,
   Move,
   RotateCcw,
-  ChevronRight,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { getTemplatesByType } from '@/lib/templates';
@@ -212,25 +211,44 @@ function EditorContent() {
   const searchParams = useSearchParams();
   const initialType = (searchParams.get('type') as DocumentType) || 'slide';
 
-  const [docType, setDocType] = useState<DocumentType>(initialType);
+  const [docType, setDocType] = useState<DocumentType>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('pretext_active_doc');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.type) return parsed.type;
+        }
+      } catch (e) {
+        console.error('Failed to load active doc type', e);
+      }
+    }
+    return initialType;
+  });
+
   const [content, setContent] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('pretext_active_doc');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.content) return parsed.content;
+        }
+      } catch (e) {
+        console.error('Failed to load active doc content', e);
+      }
+    }
     const preset = PRESETS[initialType];
     return preset.text;
   });
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('pretext_active_doc');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.type && parsed.content) {
-          setDocType(parsed.type);
-          setContent(parsed.content);
-        }
+      if (localStorage.getItem('pretext_active_doc')) {
         localStorage.removeItem('pretext_active_doc');
       }
     } catch (e) {
-      console.error('Failed to load active doc', e);
+      console.error('Failed to clean active doc key', e);
     }
   }, []);
 
