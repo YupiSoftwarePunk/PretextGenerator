@@ -9,7 +9,6 @@ import {
   Layers,
   Save,
   Trash2,
-  PlusCircle,
   Eye,
   Download,
   FileCode,
@@ -17,6 +16,12 @@ import {
   Bold,
   Italic,
   Quote,
+  Image as ImageIcon,
+  MessageSquare,
+  Zap,
+  Move,
+  RotateCcw,
+  ChevronRight,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { getTemplatesByType } from '@/lib/templates';
@@ -24,14 +29,195 @@ import PretextRenderer from '@/components/pretext/PretextRenderer';
 import { PretextEngine, Obstacle, WordLayoutItem } from '@/lib/PretextEngine';
 import { Header } from '@/components/layout/Header';
 
+// ─── Obstacle Types ──────────────────────────────────────────────────────────
+type ObstacleKind = 'image' | 'quote' | 'badge';
+
+interface PretextObstacle extends Obstacle {
+  id: string;
+  kind: ObstacleKind;
+  label: string;
+}
+
+// ─── Preset configurations per docType ───────────────────────────────────────
+const PRESETS: Record<DocumentType, { obstacles: Omit<PretextObstacle, 'id'>[]; text: string }> = {
+  slide: {
+    obstacles: [
+      {
+        x: 280, y: 50, width: 180, height: 130, shape: 'rect', gap: 16,
+        kind: 'badge', label: '⚡ 120 FPS',
+      },
+    ],
+    text: 'Pretext Engine обеспечивает стабильные 120 FPS при обтекании любых визуальных объектов. Математический расчёт координат выполняется полностью на JavaScript без единого DOM reflow. Текст плавно огибает карточку метрики, сохраняя читаемость и структуру контента даже при динамическом изменении положения препятствия.',
+  },
+  card: {
+    obstacles: [
+      {
+        x: 170, y: 60, width: 130, height: 130, shape: 'circle', gap: 14,
+        kind: 'image', label: '🖼 Media',
+      },
+    ],
+    text: 'Флэшкард с центральной графической иконкой демонстрирует возможности алгоритма Pretext: текст равномерно распределяется вокруг круглого препятствия, создавая натуральное и органичное обтекание. Каждое слово точно позиционируется в пространстве документа.',
+  },
+  cheatsheet: {
+    obstacles: [
+      {
+        x: 30, y: 80, width: 160, height: 100, shape: 'rect', gap: 12,
+        kind: 'quote', label: '💬 Важно',
+      },
+    ],
+    text: 'Шпаргалка со стикером важного замечания. Текст документа автоматически уступает место цитате-стикеру и продолжает поток справа и снизу. Pretext гарантирует что ни одно слово не перекрывает визуальный блок.',
+  },
+};
+
+// ─── Canvas Drawing helpers ──────────────────────────────────────────────────
+function drawObstacleOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  obs: PretextObstacle,
+  isDragging: boolean
+) {
+  ctx.save();
+
+  if (obs.shape === 'circle') {
+    const cx = obs.x + obs.width / 2;
+    const cy = obs.y + obs.height / 2;
+    const r = obs.width / 2;
+
+    // Glow
+    ctx.shadowColor = isDragging ? '#e879f9' : '#c084fc';
+    ctx.shadowBlur = isDragging ? 24 : 14;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = isDragging ? 'rgba(168,85,247,0.38)' : 'rgba(139,92,246,0.22)';
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = isDragging ? '#e879f9' : '#c084fc';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Icon label
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillStyle = '#fae8ff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(obs.kind === 'image' ? '🖼' : obs.kind === 'quote' ? '💬' : '⚡', cx, cy - 10);
+    ctx.font = '600 10px monospace';
+    ctx.fillStyle = '#d8b4fe';
+    ctx.fillText(obs.label, cx, cy + 10);
+
+  } else {
+    // Rounded rect obstacle
+    const borderColor = obs.kind === 'badge'
+      ? (isDragging ? '#fbbf24' : '#f59e0b')
+      : obs.kind === 'quote'
+        ? (isDragging ? '#67e8f9' : '#22d3ee')
+        : (isDragging ? '#86efac' : '#4ade80');
+
+    const fillColor = obs.kind === 'badge'
+      ? (isDragging ? 'rgba(245,158,11,0.35)' : 'rgba(245,158,11,0.18)')
+      : obs.kind === 'quote'
+        ? (isDragging ? 'rgba(6,182,212,0.38)' : 'rgba(6,182,212,0.18)')
+        : (isDragging ? 'rgba(74,222,128,0.35)' : 'rgba(74,222,128,0.18)');
+
+    ctx.shadowColor = borderColor;
+    ctx.shadowBlur = isDragging ? 22 : 12;
+
+    ctx.beginPath();
+    ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 10);
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = borderColor;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Inner content by kind
+    const icon = obs.kind === 'badge' ? '⚡' : obs.kind === 'quote' ? '💬' : '🖼';
+    ctx.font = 'bold 16px system-ui';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, obs.x + obs.width / 2, obs.y + obs.height / 2 - 10);
+    ctx.font = '600 10px monospace';
+    ctx.fillStyle = borderColor;
+    ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height / 2 + 12);
+
+    // Move hint
+    ctx.font = '9px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('drag ↕↔', obs.x + obs.width / 2, obs.y + obs.height - 10);
+  }
+
+  ctx.restore();
+}
+
+// ─── Export HTML generation ───────────────────────────────────────────────────
+function buildExportHTML(
+  docType: DocumentType,
+  content: string,
+  layoutItems: WordLayoutItem[],
+  obstacles: PretextObstacle[],
+  canvasWidth: number,
+  canvasHeight: number
+): string {
+  const svgContours = obstacles.map((obs) => {
+    const path = PretextEngine.generateContourPath(obs, 6);
+    const strokeColor =
+      obs.kind === 'badge' ? '#f59e0b' : obs.kind === 'quote' ? '#22d3ee' : '#c084fc';
+    const fillColor =
+      obs.kind === 'badge'
+        ? 'rgba(245,158,11,0.15)'
+        : obs.kind === 'quote'
+          ? 'rgba(6,182,212,0.15)'
+          : 'rgba(139,92,246,0.15)';
+    return `<path d="${path}" stroke="${strokeColor}" stroke-width="1.5" fill="${fillColor}" filter="url(#neon)" />`;
+  }).join('\n');
+
+  const wordSpans = layoutItems
+    .map(
+      (item) =>
+        `<span style="position:absolute;left:${item.x}px;top:${item.y - 15}px;white-space:nowrap;font-size:15px;color:#e4e4e7;">${item.word}</span>`
+    )
+    .join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Pretext Export — ${docType.toUpperCase()}</title>
+  <style>
+    body { background: #09090b; margin: 0; padding: 40px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .stage { position: relative; width: ${canvasWidth}px; height: ${canvasHeight}px; background: rgba(24,24,27,0.8); border: 1px solid rgba(139,92,246,0.3); border-radius: 16px; overflow: hidden; }
+    svg.contours { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .words { position: absolute; inset: 0; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <svg class="contours" viewBox="0 0 ${canvasWidth} ${canvasHeight}">
+      <defs>
+        <filter id="neon" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      ${svgContours}
+    </svg>
+    <div class="words">${wordSpans}</div>
+  </div>
+</body>
+</html>`;
+}
+
+// ─── Main EditorContent ───────────────────────────────────────────────────────
 function EditorContent() {
   const searchParams = useSearchParams();
   const initialType = (searchParams.get('type') as DocumentType) || 'slide';
 
   const [docType, setDocType] = useState<DocumentType>(initialType);
   const [content, setContent] = useState<string>(() => {
-    const available = getTemplatesByType(initialType);
-    return available.length > 0 ? available[0].content : '';
+    const preset = PRESETS[initialType];
+    return preset.text;
   });
 
   const [activeTab, setActiveTab] = useState<'flow' | 'card'>('flow');
@@ -39,17 +225,19 @@ function EditorContent() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [gap, setGap] = useState<number>(14);
 
-  // Obstacles state
-  const [obstacles, setObstacles] = useState<Obstacle[]>([
-    { x: 180, y: 40, width: 120, height: 120, shape: 'circle', gap: 14 },
-  ]);
+  // Obstacles with kind/label
+  const [obstacles, setObstacles] = useState<PretextObstacle[]>(() => {
+    const preset = PRESETS[initialType];
+    return preset.obstacles.map((o, i) => ({ ...o, id: `obs_${Date.now()}_${i}` }));
+  });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const obstaclesRef = useRef<Obstacle[]>(obstacles);
+  const obstaclesRef = useRef<PretextObstacle[]>(obstacles);
   const isDraggingRef = useRef<number | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerWidthRef = useRef<number>(500);
+  const lastLayoutRef = useRef<WordLayoutItem[]>([]);
 
   useEffect(() => {
     obstaclesRef.current = obstacles;
@@ -68,7 +256,7 @@ function EditorContent() {
     return () => window.removeEventListener('resize', updateContainerWidth);
   }, [updateContainerWidth]);
 
-  // Main Live Canvas Flow Render Loop
+  // ── Main 120FPS Canvas Render Loop ─────────────────────────────────────────
   useEffect(() => {
     if (activeTab !== 'flow') return;
 
@@ -85,7 +273,7 @@ function EditorContent() {
       if (!ctx) return;
 
       const currentWidth = containerWidthRef.current;
-      const currentHeight = 360;
+      const currentHeight = 400;
       const dpr = window.devicePixelRatio || 1;
 
       if (canvas.width !== currentWidth * dpr || canvas.height !== currentHeight * dpr) {
@@ -105,63 +293,13 @@ function EditorContent() {
         containerWidth: currentWidth,
         fontSize: 15,
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        lineHeight: 25,
+        lineHeight: 26,
       });
 
-      const layoutItems: WordLayoutItem[] = engine.calculateWordLayout(
-        content,
-        activeObs,
-        gap
-      );
+      const layoutItems: WordLayoutItem[] = engine.calculateWordLayout(content, activeObs, gap);
+      lastLayoutRef.current = layoutItems;
 
-      // Render Obstacles
-      activeObs.forEach((obs, idx) => {
-        const isDragging = isDraggingRef.current === idx;
-
-        ctx.save();
-        if (obs.shape === 'circle') {
-          const cx = obs.x + obs.width / 2;
-          const cy = obs.y + obs.height / 2;
-          const r = obs.width / 2;
-
-          ctx.beginPath();
-          ctx.arc(cx, cy, r, 0, Math.PI * 2);
-          ctx.fillStyle = isDragging ? 'rgba(168, 85, 247, 0.4)' : 'rgba(139, 92, 246, 0.22)';
-          ctx.fill();
-          ctx.lineWidth = 1.5;
-          ctx.strokeStyle = isDragging ? '#e879f9' : '#c084fc';
-          ctx.shadowColor = '#c084fc';
-          ctx.shadowBlur = isDragging ? 18 : 10;
-          ctx.stroke();
-
-          ctx.shadowBlur = 0;
-          ctx.font = '600 12px monospace';
-          ctx.fillStyle = '#fae8ff';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(`● Orb #${idx + 1}`, cx, cy);
-        } else {
-          ctx.beginPath();
-          ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 12);
-          ctx.fillStyle = isDragging ? 'rgba(6, 182, 212, 0.38)' : 'rgba(6, 182, 212, 0.18)';
-          ctx.fill();
-          ctx.lineWidth = 1.5;
-          ctx.strokeStyle = isDragging ? '#67e8f9' : '#22d3ee';
-          ctx.shadowColor = '#06b6d4';
-          ctx.shadowBlur = isDragging ? 18 : 10;
-          ctx.stroke();
-
-          ctx.shadowBlur = 0;
-          ctx.font = '600 12px monospace';
-          ctx.fillStyle = '#ecfeff';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(`■ Card #${idx + 1}`, obs.x + obs.width / 2, obs.y + obs.height / 2);
-        }
-        ctx.restore();
-      });
-
-      // Render Text
+      // Draw text first (behind obstacles)
       ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = '#e4e4e7';
       ctx.textBaseline = 'alphabetic';
@@ -171,6 +309,12 @@ function EditorContent() {
         ctx.fillText(item.word, item.x, item.y);
       }
 
+      // Draw obstacles on top
+      activeObs.forEach((obs, idx) => {
+        const isDragging = isDraggingRef.current === idx;
+        drawObstacleOnCanvas(ctx, obs, isDragging);
+      });
+
       ctx.restore();
       animationFrameId = requestAnimationFrame(render);
     };
@@ -179,13 +323,15 @@ function EditorContent() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [activeTab, content, gap]);
 
-  // Pointer drag on preview canvas
+  // ── Pointer Drag on Canvas ─────────────────────────────────────────────────
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
+    const scaleX = canvas.width / (window.devicePixelRatio || 1) / rect.width;
+    const scaleY = canvas.height / (window.devicePixelRatio || 1) / rect.height;
+    const px = (e.clientX - rect.left) * scaleX;
+    const py = (e.clientY - rect.top) * scaleY;
 
     const currentObs = obstaclesRef.current;
     for (let i = currentObs.length - 1; i >= 0; i--) {
@@ -217,15 +363,17 @@ function EditorContent() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
+    const scaleX = canvas.width / (window.devicePixelRatio || 1) / rect.width;
+    const scaleY = canvas.height / (window.devicePixelRatio || 1) / rect.height;
+    const px = (e.clientX - rect.left) * scaleX;
+    const py = (e.clientY - rect.top) * scaleY;
 
     const currentWidth = containerWidthRef.current;
     const targetObs = obstaclesRef.current[draggingIdx];
     if (!targetObs) return;
 
-    const newX = Math.max(10, Math.min(currentWidth - targetObs.width - 10, px - dragOffsetRef.current.x));
-    const newY = Math.max(10, Math.min(350 - targetObs.height, py - dragOffsetRef.current.y));
+    const newX = Math.max(0, Math.min(currentWidth - targetObs.width, px - dragOffsetRef.current.x));
+    const newY = Math.max(0, Math.min(390 - targetObs.height, py - dragOffsetRef.current.y));
 
     const updated = [...obstaclesRef.current];
     updated[draggingIdx] = { ...targetObs, x: newX, y: newY };
@@ -243,12 +391,17 @@ function EditorContent() {
     }
   };
 
+  // ── Document Type Change ───────────────────────────────────────────────────
   const handleTypeChange = (newType: DocumentType) => {
     setDocType(newType);
-    const available = getTemplatesByType(newType);
-    if (available.length > 0) {
-      setContent(available[0].content);
-    }
+    const preset = PRESETS[newType];
+    setContent(preset.text);
+    const newObstacles = preset.obstacles.map((o, i) => ({
+      ...o,
+      id: `obs_${Date.now()}_${i}`,
+    }));
+    obstaclesRef.current = newObstacles;
+    setObstacles(newObstacles);
   };
 
   const handleSelectTemplate = (template: Template) => {
@@ -259,6 +412,7 @@ function EditorContent() {
     setContent((prev) => prev + '\n' + snippet);
   };
 
+  // ── Copy / Save ────────────────────────────────────────────────────────────
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
@@ -271,7 +425,7 @@ function EditorContent() {
       const newDoc = {
         id: 'doc_' + Date.now(),
         type: docType,
-        title: `${docType.toUpperCase()} - ${new Date().toLocaleDateString()}`,
+        title: `${docType.toUpperCase()} — ${new Date().toLocaleDateString()}`,
         content,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -285,7 +439,7 @@ function EditorContent() {
     }
   };
 
-  // Export to PNG Image
+  // ── Export PNG ─────────────────────────────────────────────────────────────
   const handleExportPNG = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -296,45 +450,58 @@ function EditorContent() {
     a.click();
   };
 
-  // Export to HTML Standalone File
+  // ── Export HTML with real Pretext layout ───────────────────────────────────
   const handleExportHTML = () => {
-    const htmlContent = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>Pretext Document - ${docType.toUpperCase()}</title>
-  <style>
-    body { background: #09090b; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; }
-    .card { max-width: 800px; margin: 0 auto; background: rgba(24,24,27,0.8); border: 1px solid rgba(139,92,246,0.3); border-radius: 20px; padding: 40px; box-shadow: 0 0 40px rgba(139,92,246,0.2); }
-    h1, h2, h3 { color: #ffffff; }
-    blockquote { border-left: 4px solid #8b5cf6; padding-left: 16px; margin: 16px 0; color: #d4d4d8; }
-    code { background: #18181b; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <pre style="white-space: pre-wrap; font-family: inherit;">${content}</pre>
-  </div>
-</body>
-</html>`;
+    const currentWidth = containerWidthRef.current;
+    const engine = new PretextEngine({
+      containerWidth: currentWidth,
+      fontSize: 15,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      lineHeight: 26,
+    });
+    const layoutItems = engine.calculateWordLayout(content, obstaclesRef.current, gap);
+    const htmlContent = buildExportHTML(
+      docType,
+      content,
+      layoutItems,
+      obstaclesRef.current,
+      currentWidth,
+      400
+    );
     const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `pretext_${docType}_${Date.now()}.html`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleAddObstacle = (shape: 'rect' | 'circle') => {
-    const newObs: Obstacle = {
+  // ── Add / Remove Obstacles ─────────────────────────────────────────────────
+  const handleAddObstacle = (kind: ObstacleKind) => {
+    const shape: 'rect' | 'circle' = kind === 'image' ? 'circle' : 'rect';
+    const w = kind === 'image' ? 110 : kind === 'badge' ? 150 : 170;
+    const h = kind === 'image' ? 110 : kind === 'badge' ? 80 : 95;
+    const label = kind === 'image' ? '🖼 Media' : kind === 'badge' ? '⚡ Badge' : '💬 Цитата';
+
+    const newObs: PretextObstacle = {
+      id: `obs_${Date.now()}`,
       x: Math.floor(Math.random() * 150) + 50,
-      y: Math.floor(Math.random() * 120) + 40,
-      width: shape === 'circle' ? 110 : 160,
-      height: shape === 'circle' ? 110 : 90,
+      y: Math.floor(Math.random() * 100) + 40,
+      width: w,
+      height: h,
       shape,
       gap,
+      kind,
+      label,
     };
     const updated = [...obstaclesRef.current, newObs];
+    obstaclesRef.current = updated;
+    setObstacles(updated);
+  };
+
+  const handleRemoveObstacle = (id: string) => {
+    const updated = obstaclesRef.current.filter((o) => o.id !== id);
     obstaclesRef.current = updated;
     setObstacles(updated);
   };
@@ -344,16 +511,31 @@ function EditorContent() {
     setObstacles([]);
   };
 
+  const handleResetPreset = () => {
+    const preset = PRESETS[docType];
+    const newObstacles = preset.obstacles.map((o, i) => ({
+      ...o,
+      id: `obs_${Date.now()}_${i}`,
+    }));
+    obstaclesRef.current = newObstacles;
+    setObstacles(newObstacles);
+  };
+
+  // ── Kind badge colors ──────────────────────────────────────────────────────
+  const kindColor: Record<ObstacleKind, string> = {
+    image: 'text-violet-400 border-violet-500/40 bg-violet-950/50',
+    quote: 'text-cyan-400 border-cyan-500/40 bg-cyan-950/50',
+    badge: 'text-amber-400 border-amber-500/40 bg-amber-950/50',
+  };
+
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col font-sans">
-      {/* Universal Sticky Header */}
       <Header />
 
-      {/* Main Studio Workspace with Top Padding */}
       <div className="flex-1 flex flex-col lg:flex-row pt-16 overflow-hidden">
-        {/* Left Sidebar: Formats, Templates & ToolBar */}
-        <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/60 p-6 flex flex-col gap-6 overflow-y-auto">
-          {/* Document Type Selector */}
+        {/* ── Left Sidebar ──────────────────────────────────────────── */}
+        <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/60 p-5 flex flex-col gap-5 overflow-y-auto">
+          {/* Document type */}
           <div>
             <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
               Формат документа
@@ -375,8 +557,106 @@ function EditorContent() {
             </div>
           </div>
 
-          {/* Markdown Snippet Shortcuts */}
-          <div>
+          {/* Pretext Obstacles Panel */}
+          <div className="pt-3 border-t border-white/10 space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-zinc-300 font-bold uppercase flex items-center gap-1.5">
+                <Move className="w-3.5 h-3.5 text-violet-400" />
+                Препятствия Pretext
+              </span>
+              <span className="text-violet-400 font-semibold">{obstacles.length}</span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-relaxed">
+              Добавляйте визуальные блоки — текст документа будет огибать их в реальном времени.
+            </p>
+
+            {/* Add buttons */}
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                onClick={() => handleAddObstacle('image')}
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl bg-violet-950/50 border border-violet-500/30 text-xs text-violet-300 hover:bg-violet-900/50 transition-colors font-mono"
+                title="Добавить медиа-изображение"
+              >
+                <ImageIcon className="w-4 h-4" />
+                <span className="text-[10px]">Медиа</span>
+              </button>
+              <button
+                onClick={() => handleAddObstacle('quote')}
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl bg-cyan-950/50 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-900/50 transition-colors font-mono"
+                title="Добавить цитату-стикер"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span className="text-[10px]">Цитата</span>
+              </button>
+              <button
+                onClick={() => handleAddObstacle('badge')}
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl bg-amber-950/50 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-900/50 transition-colors font-mono"
+                title="Добавить инфо-бейдж"
+              >
+                <Zap className="w-4 h-4" />
+                <span className="text-[10px]">Бейдж</span>
+              </button>
+            </div>
+
+            {/* Obstacle List */}
+            {obstacles.length > 0 && (
+              <div className="space-y-1.5">
+                {obstacles.map((obs, idx) => (
+                  <div
+                    key={obs.id}
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-[11px] font-mono ${kindColor[obs.kind]}`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <ChevronRight className="w-3 h-3 opacity-60" />
+                      {obs.label} #{idx + 1}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveObstacle(obs.id)}
+                      className="opacity-50 hover:opacity-100 transition-opacity ml-2"
+                      title="Удалить"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleResetPreset}
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors font-mono border border-white/10 rounded-lg"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Пресет
+                  </button>
+                  <button
+                    onClick={handleClearObstacles}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 transition-colors font-mono"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Очистить
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Gap Slider */}
+          <div className="pt-2 border-t border-white/10">
+            <div className="flex justify-between text-xs font-mono mb-1.5">
+              <span className="text-zinc-400">Отступ (Gap)</span>
+              <span className="text-cyan-400 font-bold">{gap} px</span>
+            </div>
+            <input
+              type="range"
+              min="6"
+              max="32"
+              value={gap}
+              onChange={(e) => setGap(Number(e.target.value))}
+              className="w-full accent-cyan-400 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
+            />
+          </div>
+
+          {/* Snippet Shortcuts */}
+          <div className="pt-2 border-t border-white/10">
             <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-2.5 block font-mono">
               Быстрые сниппеты
             </label>
@@ -414,7 +694,7 @@ function EditorContent() {
           </div>
 
           {/* Preset Templates */}
-          <div>
+          <div className="pt-2 border-t border-white/10">
             <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
               Готовые пресеты
             </label>
@@ -433,68 +713,16 @@ function EditorContent() {
               ))}
             </div>
           </div>
-
-          {/* Obstacle Controls */}
-          <div className="pt-4 border-t border-white/10 space-y-3">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-zinc-400 font-semibold uppercase">Препятствия потока</span>
-              <span className="text-violet-400">{obstacles.length} шт.</span>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleAddObstacle('circle')}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs hover:bg-white/10 transition-colors font-mono"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-cyan-400" />
-                <span>+ Сфера</span>
-              </button>
-              <button
-                onClick={() => handleAddObstacle('rect')}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs hover:bg-white/10 transition-colors font-mono"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-pink-400" />
-                <span>+ Блок</span>
-              </button>
-            </div>
-
-            {obstacles.length > 0 && (
-              <button
-                onClick={handleClearObstacles}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 transition-colors font-mono"
-              >
-                <Trash2 className="w-3 h-3" />
-                <span>Сбросить препятствия</span>
-              </button>
-            )}
-          </div>
-
-          {/* Gap Slider */}
-          <div className="pt-2">
-            <div className="flex justify-between text-xs font-mono mb-1.5">
-              <span className="text-zinc-400">Отступ (Gap)</span>
-              <span className="text-cyan-400 font-bold">{gap} px</span>
-            </div>
-            <input
-              type="range"
-              min="6"
-              max="28"
-              value={gap}
-              onChange={(e) => setGap(Number(e.target.value))}
-              className="w-full accent-cyan-400 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
-            />
-          </div>
         </aside>
 
-        {/* Center: Split Text Editor & Live Interactive Preview */}
+        {/* ── Center: Editor + Preview ────────────────────────────── */}
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden">
           {/* Text Editor Pane */}
           <div className="flex flex-col h-full bg-[#0c0c10]">
-            {/* Editor Toolbar Header */}
             <div className="px-6 py-3 border-b border-white/10 flex items-center justify-between bg-zinc-950/40">
               <span className="text-xs font-mono text-zinc-400 flex items-center gap-2">
                 <Code className="w-3.5 h-3.5 text-violet-400" />
-                <span>Разметка документа</span>
+                <span>Текст документа</span>
               </span>
               <span className="text-[11px] text-zinc-500 font-mono">
                 {content.length} симв. | {content.split(/\s+/).filter(Boolean).length} слов
@@ -504,15 +732,15 @@ function EditorContent() {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="# Заголовок документа\n\nТекст с динамическим обтеканием..."
+              placeholder="Введите текст... Он будет огибать препятствия на холсте справа."
               className="flex-1 w-full p-6 bg-transparent text-zinc-200 font-mono text-sm leading-relaxed resize-none focus:outline-none placeholder:text-zinc-700 min-h-[380px]"
               spellCheck={false}
             />
           </div>
 
           {/* Live Preview Pane */}
-          <div className="flex flex-col h-full bg-zinc-950/70 p-6 overflow-y-auto">
-            {/* Top Preview Controls & Actions */}
+          <div className="flex flex-col h-full bg-zinc-950/70 p-5 overflow-y-auto">
+            {/* Top Controls */}
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-white/10">
               {/* Tab Selector */}
               <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
@@ -536,16 +764,16 @@ function EditorContent() {
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Formatted Card</span>
+                  <span>Formatted</span>
                 </button>
               </div>
 
-              {/* Action Buttons: Export & Save */}
+              {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExportPNG}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-cyan-300 hover:bg-white/10 transition-colors"
-                  title="Экспорт в PNG"
+                  title="Экспорт Pretext-макета в PNG"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>PNG</span>
@@ -554,7 +782,7 @@ function EditorContent() {
                 <button
                   onClick={handleExportHTML}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-pink-300 hover:bg-white/10 transition-colors"
-                  title="Скачать HTML"
+                  title="Экспорт Pretext-макета в HTML"
                 >
                   <FileCode className="w-3.5 h-3.5" />
                   <span>HTML</span>
@@ -563,7 +791,7 @@ function EditorContent() {
                 <button
                   onClick={handleCopy}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 transition-colors"
-                  title="Копировать разметку"
+                  title="Копировать текст"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
@@ -579,12 +807,23 @@ function EditorContent() {
             </div>
 
             {/* Renderer Stage */}
-            <div ref={containerRef} className="flex-1 flex items-center justify-center min-h-[380px]">
+            <div ref={containerRef} className="flex-1 flex items-start justify-center min-h-[400px]">
               {activeTab === 'flow' ? (
-                <div className="w-full relative border border-violet-500/30 rounded-3xl p-6 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[360px] overflow-hidden">
+                <div className="w-full relative border border-violet-500/30 rounded-3xl p-5 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[420px] overflow-hidden">
+                  {/* Info bar */}
                   <div className="text-[11px] font-mono text-zinc-500 mb-2 flex items-center justify-between">
-                    <span>Перетаскивайте фигуры мышкой</span>
-                    <span className="text-emerald-400 font-bold">120 FPS Active</span>
+                    <span className="flex items-center gap-1.5">
+                      <Move className="w-3 h-3 text-violet-400" />
+                      <span>Тяните препятствия мышкой — текст огибает в реальном времени</span>
+                    </span>
+                    <span className="text-emerald-400 font-bold">120 FPS</span>
+                  </div>
+
+                  {/* Obstacle type legend */}
+                  <div className="flex items-center gap-3 mb-2 text-[10px] font-mono">
+                    <span className="text-violet-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-500 inline-block" />🖼 Медиа</span>
+                    <span className="text-cyan-400 flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-500 inline-block" />💬 Цитата</span>
+                    <span className="text-amber-400 flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-500 inline-block" />⚡ Бейдж</span>
                   </div>
 
                   <canvas
@@ -592,7 +831,8 @@ function EditorContent() {
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
-                    className="block w-full h-[360px] cursor-grab active:cursor-grabbing touch-none"
+                    className="block w-full cursor-grab active:cursor-grabbing touch-none"
+                    style={{ height: '400px' }}
                   />
                 </div>
               ) : (

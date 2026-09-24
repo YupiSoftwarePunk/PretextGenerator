@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { PretextEngine, Obstacle } from '@/lib/PretextEngine';
 import { useIsMounted } from '@/hooks/useIsMounted';
-import { Activity, Zap, AlertTriangle, Play, Cpu } from 'lucide-react';
+import { Activity, Zap, AlertTriangle, Play, Cpu, Square, RotateCcw } from 'lucide-react';
 
 const BASE_PARAGRAPH =
   'Алгоритм Pretext производит математическое вычисление координат слов без создания промежуточных узлов DOM-дерева. Это предотвращает каскадные пересчеты геометрии страницы. ';
@@ -13,6 +13,8 @@ export const PerformanceBattle: React.FC = () => {
   const [wordTarget, setWordTarget] = useState<number>(800);
   const [isStressRunning, setIsStressRunning] = useState<boolean>(false);
   const [livePretextMs, setLivePretextMs] = useState<number>(0.22);
+  /** Frozen snapshot of livePretextMs captured the moment the test is stopped */
+  const [frozenMs, setFrozenMs] = useState<number>(0.22);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -54,6 +56,36 @@ export const PerformanceBattle: React.FC = () => {
       reflows: lines.length * 3,
     };
   }, [stressText]);
+
+  /** Stop the animation loop and freeze the displayed measurement */
+  const handleStop = useCallback(() => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    setFrozenMs(livePretextMs);
+    setIsStressRunning(false);
+  }, [livePretextMs]);
+
+  /** Stop the animation loop, clear the canvas, and reset to initial state */
+  const handleReset = useCallback(() => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    setFrozenMs(0.22);
+    setLivePretextMs(0.22);
+    setIsStressRunning(false);
+
+    // Clear the canvas
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }, []);
 
   // Continuous stress test animation loop
   useEffect(() => {
@@ -131,7 +163,8 @@ export const PerformanceBattle: React.FC = () => {
 
   if (!isMounted) return null;
 
-  const currentPretextTime = isStressRunning ? livePretextMs : metrics.pretextTime;
+  /** Show live ms while running, frozen snapshot when stopped */
+  const currentPretextTime = isStressRunning ? livePretextMs : frozenMs;
 
   return (
     <section className="w-full max-w-7xl mx-auto px-6 py-20">
@@ -214,6 +247,8 @@ export const PerformanceBattle: React.FC = () => {
             {/* Live Visual Canvas */}
             <div className="w-full h-[260px] rounded-xl bg-zinc-950/80 border border-white/5 flex items-center justify-center overflow-hidden relative">
               <canvas ref={canvasRef} className="block w-full h-full" />
+
+              {/* Overlay when NOT running: Play button */}
               {!isStressRunning && (
                 <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center">
                   <button
@@ -222,6 +257,28 @@ export const PerformanceBattle: React.FC = () => {
                   >
                     <Play className="w-3.5 h-3.5" />
                     <span>Запустить 120 FPS Стресс-тест</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Controls when running: Stop + Reset buttons in top-right corner */}
+              {isStressRunning && (
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-2">
+                  <button
+                    onClick={handleStop}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/90 hover:bg-amber-400 text-zinc-900 font-semibold text-xs shadow-lg shadow-amber-500/30 transition-all"
+                    title="Остановить тест"
+                  >
+                    <Square className="w-3 h-3" />
+                    <span>Стоп</span>
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-700/90 hover:bg-zinc-600 text-zinc-200 font-semibold text-xs shadow-lg shadow-zinc-900/40 transition-all"
+                    title="Сбросить и очистить"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Сброс</span>
                   </button>
                 </div>
               )}

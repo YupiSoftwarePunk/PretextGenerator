@@ -38,6 +38,120 @@ const ARTICLES: Record<string, ArticleTopic> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Inline SVG: cyberpunk holographic avatar for the draggable media card
+// ---------------------------------------------------------------------------
+const CyberpunkAvatarSVG: React.FC<{ accent: string }> = ({ accent }) => {
+  const glowId = 'cyberGlow';
+  const scanId = 'scanLine';
+  return (
+    <svg
+      viewBox="0 0 270 112"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-full h-[112px] block rounded-xl overflow-hidden"
+      aria-hidden="true"
+    >
+      <defs>
+        <radialGradient id={glowId} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={accent} stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={scanId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={accent} stopOpacity="0.05" />
+          <stop offset="48%" stopColor={accent} stopOpacity="0.18" />
+          <stop offset="52%" stopColor={accent} stopOpacity="0.10" />
+          <stop offset="100%" stopColor={accent} stopOpacity="0.03" />
+        </linearGradient>
+        <filter id="neonBlur">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Background */}
+      <rect width="270" height="112" fill="#09090b" />
+      <rect width="270" height="112" fill={`url(#${glowId})`} />
+
+      {/* Circuit grid lines */}
+      {[14, 28, 42, 56, 70, 84, 98].map((y) => (
+        <line key={y} x1="0" y1={y} x2="270" y2={y} stroke={accent} strokeOpacity="0.06" strokeWidth="0.5" />
+      ))}
+      {[22, 44, 66, 88, 110, 132, 154, 176, 198, 220, 242].map((x) => (
+        <line key={x} x1={x} y1="0" x2={x} y2="112" stroke={accent} strokeOpacity="0.06" strokeWidth="0.5" />
+      ))}
+
+      {/* Scan-line overlay */}
+      <rect width="270" height="112" fill={`url(#${scanId})`} />
+
+      {/* ── Avatar silhouette (geometric circuit face) ── */}
+      {/* Neck */}
+      <rect x="122" y="80" width="26" height="18" rx="3" fill="#1a1a2e" stroke={accent} strokeOpacity="0.5" strokeWidth="1" />
+      {/* Head outer shell */}
+      <rect x="100" y="20" width="70" height="65" rx="10" fill="#12122a" stroke={accent} strokeOpacity="0.8" strokeWidth="1.2" filter="url(#neonBlur)" />
+      {/* Head inner panel */}
+      <rect x="108" y="28" width="54" height="50" rx="6" fill="#0d0d1f" stroke={accent} strokeOpacity="0.3" strokeWidth="0.7" />
+
+      {/* Eye sockets */}
+      <rect x="112" y="36" width="18" height="10" rx="3" fill="#000" stroke={accent} strokeOpacity="0.9" strokeWidth="1" />
+      <rect x="140" y="36" width="18" height="10" rx="3" fill="#000" stroke={accent} strokeOpacity="0.9" strokeWidth="1" />
+      {/* Eye glows */}
+      <rect x="115" y="39" width="12" height="4" rx="2" fill={accent} fillOpacity="0.9" filter="url(#neonBlur)" />
+      <rect x="143" y="39" width="12" height="4" rx="2" fill={accent} fillOpacity="0.9" filter="url(#neonBlur)" />
+
+      {/* Nose ridge */}
+      <line x1="135" y1="50" x2="135" y2="60" stroke={accent} strokeOpacity="0.4" strokeWidth="1" />
+
+      {/* Mouth / speaker grille */}
+      {[0, 4, 8].map((dy) => (
+        <line key={dy} x1="118" y1={62 + dy} x2="152" y2={62 + dy} stroke={accent} strokeOpacity="0.5" strokeWidth="0.8" />
+      ))}
+
+      {/* Side circuit traces — left */}
+      <polyline points="100,38 88,38 84,44 84,60 88,66 100,66" fill="none" stroke={accent} strokeOpacity="0.5" strokeWidth="0.8" />
+      <circle cx="84" cy="52" r="2.5" fill={accent} fillOpacity="0.7" filter="url(#neonBlur)" />
+      {/* Side circuit traces — right */}
+      <polyline points="170,38 182,38 186,44 186,60 182,66 170,66" fill="none" stroke={accent} strokeOpacity="0.5" strokeWidth="0.8" />
+      <circle cx="186" cy="52" r="2.5" fill={accent} fillOpacity="0.7" filter="url(#neonBlur)" />
+
+      {/* Crown circuit nodes */}
+      <circle cx="135" cy="20" r="3.5" fill={accent} fillOpacity="0.8" filter="url(#neonBlur)" />
+      <line x1="135" y1="16" x2="135" y2="8" stroke={accent} strokeOpacity="0.6" strokeWidth="1" />
+      <line x1="120" y1="20" x2="112" y2="12" stroke={accent} strokeOpacity="0.4" strokeWidth="0.8" />
+      <line x1="150" y1="20" x2="158" y2="12" stroke={accent} strokeOpacity="0.4" strokeWidth="0.8" />
+      <circle cx="135" cy="7" r="2" fill={accent} fillOpacity="0.5" />
+
+      {/* Corner bracket decorations */}
+      <polyline points="4,4 4,16 16,16" fill="none" stroke={accent} strokeOpacity="0.6" strokeWidth="1.2" />
+      <polyline points="266,4 266,16 254,16" fill="none" stroke={accent} strokeOpacity="0.6" strokeWidth="1.2" />
+      <polyline points="4,108 4,96 16,96" fill="none" stroke={accent} strokeOpacity="0.6" strokeWidth="1.2" />
+      <polyline points="266,108 266,96 254,96" fill="none" stroke={accent} strokeOpacity="0.6" strokeWidth="1.2" />
+
+      {/* Shoulder base */}
+      <path d="M82,98 Q70,98 64,108 L206,108 Q200,98 188,98 Z" fill="#12122a" stroke={accent} strokeOpacity="0.4" strokeWidth="0.8" />
+
+      {/* Status dots bottom-left */}
+      <circle cx="12" cy="102" r="2" fill="#22c55e" fillOpacity="0.9" />
+      <circle cx="20" cy="102" r="2" fill={accent} fillOpacity="0.7" />
+      <circle cx="28" cy="102" r="2" fill="#f59e0b" fillOpacity="0.6" />
+
+      {/* ID label bottom-right */}
+      <text x="258" y="104" textAnchor="end" fontSize="7" fontFamily="monospace" fill={accent} fillOpacity="0.6">
+        ID::0xC7B2
+      </text>
+    </svg>
+  );
+};
+
+// Accent hex colours keyed by theme name (for SVG, Tailwind colours won't work inline)
+const THEME_ACCENT_HEX: Record<string, string> = {
+  violet: '#8b5cf6',
+  cyan: '#06b6d4',
+  emerald: '#10b981',
+};
+
 export const CyberEditorialSpread: React.FC = () => {
   const isMounted = useIsMounted();
   const stageRef = useRef<HTMLDivElement>(null);
@@ -51,7 +165,7 @@ export const CyberEditorialSpread: React.FC = () => {
     x: 220,
     y: 45,
     width: 270,
-    height: 165,
+    height: 240,
     shape: 'rect',
     gap: 16,
   });
@@ -60,6 +174,8 @@ export const CyberEditorialSpread: React.FC = () => {
 
   const pullQuoteRef = useRef<Obstacle>(pullQuotePos);
   const dragStartOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Cache the stage bounding rect for every drag session — avoids per-frame reflow
+  const stageRectRef = useRef<DOMRect | null>(null);
   const containerWidthRef = useRef<number>(750);
   const engineRef = useRef<PretextEngine | null>(null);
 
@@ -107,7 +223,7 @@ export const CyberEditorialSpread: React.FC = () => {
       if (!ctx) return;
 
       const currentWidth = containerWidthRef.current;
-      const currentHeight = 360;
+      const currentHeight = 420;
       const dpr = window.devicePixelRatio || 1;
 
       if (canvas.width !== currentWidth * dpr || canvas.height !== currentHeight * dpr) {
@@ -156,7 +272,11 @@ export const CyberEditorialSpread: React.FC = () => {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isMounted, article.text]);
 
-  // Robust Pointer Drag Handlers attached DIRECTLY to the media card
+  // ---------------------------------------------------------------------------
+  // Pointer Drag Handlers — attached to the card div itself
+  // stageRectRef caches getBoundingClientRect() once per drag session so we
+  // never pay a reflow cost on every pointermove frame.
+  // ---------------------------------------------------------------------------
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -164,10 +284,15 @@ export const CyberEditorialSpread: React.FC = () => {
     const target = e.currentTarget;
     target.setPointerCapture(e.pointerId);
 
-    const currentObs = pullQuoteRef.current;
+    // Snapshot the stage position relative to the viewport — stored in a ref
+    // so handlePointerMove can read it without triggering a new reflow each frame.
+    const stageRect = stageRef.current?.getBoundingClientRect() ?? null;
+    stageRectRef.current = stageRect;
+
+    const obs = pullQuoteRef.current;
     dragStartOffset.current = {
-      x: e.clientX - currentObs.x,
-      y: e.clientY - currentObs.y,
+      x: e.clientX - (stageRect?.left ?? 0) - obs.x,
+      y: e.clientY - (stageRect?.top ?? 0) - obs.y,
     };
 
     setIsDragging(true);
@@ -177,14 +302,21 @@ export const CyberEditorialSpread: React.FC = () => {
     if (!isDragging) return;
     e.preventDefault();
 
-    const stage = stageRef.current;
-    if (!stage) return;
+    const stageRect = stageRectRef.current;
+    const stageLeft = stageRect?.left ?? 0;
+    const stageTop = stageRect?.top ?? 0;
 
     const currentWidth = containerWidthRef.current;
     const currentObs = pullQuoteRef.current;
 
-    const newX = Math.max(10, Math.min(currentWidth - currentObs.width - 10, e.clientX - dragStartOffset.current.x));
-    const newY = Math.max(10, Math.min(350 - currentObs.height, e.clientY - dragStartOffset.current.y));
+    const newX = Math.max(
+      10,
+      Math.min(currentWidth - currentObs.width - 10, e.clientX - stageLeft - dragStartOffset.current.x)
+    );
+    const newY = Math.max(
+      10,
+      Math.min(410 - currentObs.height, e.clientY - stageTop - dragStartOffset.current.y)
+    );
 
     const updated: Obstacle = { ...currentObs, x: newX, y: newY };
     pullQuoteRef.current = updated;
@@ -196,6 +328,7 @@ export const CyberEditorialSpread: React.FC = () => {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
       }
+      stageRectRef.current = null;
       setIsDragging(false);
     }
   };
@@ -205,7 +338,7 @@ export const CyberEditorialSpread: React.FC = () => {
       x: Math.max(120, Math.floor(containerWidthRef.current / 2 - 135)),
       y: 50,
       width: 270,
-      height: 165,
+      height: 240,
       shape: 'rect',
       gap: 16,
     };
@@ -236,6 +369,8 @@ export const CyberEditorialSpread: React.FC = () => {
       tagBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     },
   }[theme];
+
+  const accentHex = THEME_ACCENT_HEX[theme];
 
   if (!isMounted) return null;
 
@@ -342,17 +477,17 @@ export const CyberEditorialSpread: React.FC = () => {
         {/* Text Stage with Draggable Media Obstacle Card */}
         <div
           ref={stageRef}
-          className="relative w-full min-h-[360px] h-[360px] cursor-default select-none overflow-hidden rounded-2xl bg-zinc-950/40 p-4 border border-white/5"
+          className="relative w-full min-h-[420px] h-[420px] cursor-default select-none overflow-hidden rounded-2xl bg-zinc-950/40 p-4 border border-white/5"
         >
           {/* Flowing Text Canvas */}
           <canvas ref={canvasRef} className="absolute inset-0 block pointer-events-none" />
 
-          {/* DRAGGABLE MEDIA PULL-QUOTE CARD */}
+          {/* ── DRAGGABLE MEDIA PULL-QUOTE CARD ── */}
           <div
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            className={`absolute z-30 cursor-grab active:cursor-grabbing rounded-2xl p-5 border ${themeColors.border} ${themeColors.bgCard} backdrop-blur-2xl shadow-2xl flex flex-col justify-between select-none transition-shadow duration-200 touch-none ${
+            className={`absolute z-30 cursor-grab active:cursor-grabbing rounded-2xl border ${themeColors.border} ${themeColors.bgCard} backdrop-blur-2xl shadow-2xl flex flex-col select-none touch-none transition-shadow duration-200 overflow-hidden ${
               isDragging ? 'scale-[1.02] shadow-[0_0_35px_rgba(139,92,246,0.4)] border-white/40' : ''
             }`}
             style={{
@@ -362,8 +497,8 @@ export const CyberEditorialSpread: React.FC = () => {
               height: `${pullQuotePos.height}px`,
             }}
           >
-            {/* Top Bar with Media Icon & Drag Hint */}
-            <div className="flex items-center justify-between mb-2">
+            {/* ── Header bar ── */}
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
               <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-white">
                 <Cpu className={`w-4 h-4 ${themeColors.accent}`} />
                 <span>MEDIA MODULE</span>
@@ -374,13 +509,37 @@ export const CyberEditorialSpread: React.FC = () => {
               </span>
             </div>
 
-            {/* Quote Body */}
-            <p className="text-xs text-zinc-100 font-medium italic leading-relaxed line-clamp-3">
+            {/* ── Cyberpunk avatar SVG illustration ── */}
+            <div className="shrink-0 px-3">
+              <CyberpunkAvatarSVG accent={accentHex} />
+            </div>
+
+            {/* ── Glowing neon role badge ── */}
+            <div className="px-4 pt-2 shrink-0">
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border"
+                style={{
+                  color: accentHex,
+                  borderColor: `${accentHex}55`,
+                  backgroundColor: `${accentHex}18`,
+                  boxShadow: `0 0 10px ${accentHex}44`,
+                }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: accentHex }}
+                />
+                {article.author.toUpperCase()}
+              </span>
+            </div>
+
+            {/* ── Pull-quote text ── */}
+            <p className="px-4 pt-2 text-[11px] text-zinc-200 font-medium italic leading-relaxed line-clamp-2 shrink-0">
               {article.quote}
             </p>
 
-            {/* Footnote */}
-            <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-mono">
+            {/* ── Author footer ── */}
+            <div className="mt-auto px-4 pb-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-mono shrink-0">
               <span className="text-zinc-400 flex items-center gap-1">
                 <Quote className="w-3 h-3 text-violet-400" />
                 {article.author}
