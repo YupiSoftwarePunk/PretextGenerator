@@ -25,16 +25,34 @@ import { Header } from '@/components/layout/Header';
 
 const emptyDocs: Document[] = [];
 
+let cachedRaw: string | null = null;
+let cachedDocs: Document[] = emptyDocs;
+
 function subscribeStorage(callback: () => void) {
   window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
+  window.addEventListener('focus', callback);
+  return () => {
+    window.removeEventListener('storage', callback);
+    window.removeEventListener('focus', callback);
+  };
 }
 
 function getStoredDocs(): Document[] {
   if (typeof window === 'undefined') return emptyDocs;
   try {
     const raw = localStorage.getItem('pretext_docs');
-    return raw ? JSON.parse(raw) : emptyDocs;
+    if (raw === null) {
+      if (cachedRaw !== null) {
+        cachedRaw = null;
+        cachedDocs = emptyDocs;
+      }
+      return cachedDocs;
+    }
+    if (raw !== cachedRaw) {
+      cachedRaw = raw;
+      cachedDocs = JSON.parse(raw);
+    }
+    return cachedDocs;
   } catch {
     return emptyDocs;
   }
