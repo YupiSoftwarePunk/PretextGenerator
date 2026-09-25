@@ -23,7 +23,7 @@ const orbitron = Orbitron({
 });
 
 export const metadata: Metadata = {
-  title: "Pretext Generator - Слайды, Карточки, Шпаргалки",
+  title: "Pretext Generator",
   description: "Генератор визуальных карточек, шпаргалок и презентаций на базе Pretext",
 };
 

@@ -113,6 +113,39 @@ export default function GalleryPage() {
     }
   };
 
+  const getTypeBadgeStyle = (type: DocumentType) => {
+    switch (type) {
+      case 'slide':
+        return 'text-violet-400 bg-violet-950/60 border-violet-500/20';
+      case 'card':
+        return 'text-cyan-400 bg-cyan-950/60 border-cyan-500/20';
+      case 'cheatsheet':
+        return 'text-pink-400 bg-pink-950/60 border-pink-500/20';
+    }
+  };
+
+  const getTypeCardHoverStyle = (type: DocumentType) => {
+    switch (type) {
+      case 'slide':
+        return 'hover:border-violet-500/50 hover:shadow-[0_0_25px_rgba(139,92,246,0.2)]';
+      case 'card':
+        return 'hover:border-cyan-500/50 hover:shadow-[0_0_25px_rgba(6,182,212,0.2)]';
+      case 'cheatsheet':
+        return 'hover:border-pink-500/50 hover:shadow-[0_0_25px_rgba(236,72,153,0.2)]';
+    }
+  };
+
+  const getTypeButtonHoverStyle = (type: DocumentType) => {
+    switch (type) {
+      case 'slide':
+        return 'hover:bg-violet-600 hover:text-white';
+      case 'card':
+        return 'hover:bg-cyan-600 hover:text-white';
+      case 'cheatsheet':
+        return 'hover:bg-pink-600 hover:text-white';
+    }
+  };
+
   // Filtered lists
   const filteredSavedDocs = useMemo(() => {
     return savedDocs.filter((doc) => {
@@ -216,11 +249,11 @@ export default function GalleryPage() {
                 return (
                   <div
                     key={doc.id}
-                    className="glass-card rounded-2xl p-6 border border-white/10 flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_25px_rgba(6,182,212,0.2)] transition-all group h-[280px]"
+                    className={`glass-card rounded-2xl p-6 border border-white/10 flex flex-col justify-between transition-all group h-[280px] ${getTypeCardHoverStyle(doc.type)}`}
                   >
                     <div className="overflow-hidden">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                        <div className={`flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg border ${getTypeBadgeStyle(doc.type)}`}>
                           <Icon className="w-3.5 h-3.5" />
                           <span className="uppercase">{doc.type}</span>
                         </div>
@@ -259,7 +292,9 @@ export default function GalleryPage() {
                       <Link
                         href={`/editor?type=${doc.type}`}
                         onClick={() => handleOpenInStudio(doc.type, doc.content, doc.title)}
-                        className="flex items-center gap-1 text-xs font-semibold text-cyan-400 group-hover:text-cyan-300 transition-colors"
+                        className={`flex items-center gap-1 text-xs font-semibold transition-colors ${
+                          doc.type === 'slide' ? 'text-violet-400 group-hover:text-violet-300' : doc.type === 'card' ? 'text-cyan-400 group-hover:text-cyan-300' : 'text-pink-400 group-hover:text-pink-300'
+                        }`}
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Открыть</span>
@@ -285,11 +320,11 @@ export default function GalleryPage() {
               return (
                 <div
                   key={tpl.id}
-                  className="glass-card rounded-2xl p-6 border border-white/10 flex flex-col justify-between hover:border-violet-500/50 hover:shadow-[0_0_25px_rgba(139,92,246,0.2)] transition-all group h-[300px]"
+                  className={`glass-card rounded-2xl p-6 border border-white/10 flex flex-col justify-between transition-all group h-[300px] ${getTypeCardHoverStyle(tpl.type)}`}
                 >
                   <div className="overflow-hidden">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-1.5 text-xs font-mono text-violet-400 bg-violet-950/60 px-2.5 py-1 rounded-lg border border-violet-500/20">
+                      <div className={`flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg border ${getTypeBadgeStyle(tpl.type)}`}>
                         <Icon className="w-3.5 h-3.5" />
                         <span className="uppercase">{tpl.type}</span>
                       </div>
@@ -324,7 +359,7 @@ export default function GalleryPage() {
                     <Link
                       href={`/editor?type=${tpl.type}`}
                       onClick={() => handleOpenInStudio(tpl.type, tpl.content, tpl.name)}
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 hover:bg-violet-600 hover:text-white border border-white/10 text-xs font-medium text-zinc-300 transition-all"
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-medium text-zinc-300 transition-all ${getTypeButtonHoverStyle(tpl.type)}`}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>В студию</span>

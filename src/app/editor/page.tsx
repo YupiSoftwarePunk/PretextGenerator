@@ -473,13 +473,26 @@ function EditorContent() {
 
   // ── Export PNG ─────────────────────────────────────────────────────────────
   const handleExportPNG = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pretext_${docType}_${Date.now()}.png`;
-    a.click();
+    if (activeTab !== 'flow') {
+      setActiveTab('flow');
+    }
+    setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        alert('Холст не найден. Переключитесь на вкладку Pretext Flow для экспорта.');
+        return;
+      }
+      try {
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pretext_${docType}_${Date.now()}.png`;
+        a.click();
+      } catch (e) {
+        console.error('Export PNG failed:', e);
+        alert('Ошибка экспорта в PNG: ' + e);
+      }
+    }, 120);
   };
 
   // ── Export HTML with real Pretext layout ───────────────────────────────────
