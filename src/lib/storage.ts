@@ -27,6 +27,7 @@ export type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
  * Trigger storage change event across the application
  */
 function notifyStorageChange() {
+  cachedDocsRaw = null;
   if (typeof window === 'undefined') return;
   try {
     window.dispatchEvent(new Event(STORAGE_EVENT));
@@ -36,19 +37,26 @@ function notifyStorageChange() {
   }
 }
 
+let cachedDocsRaw: string | null = null;
+let cachedDocsResult: Document[] = [];
+
 /**
- * Get all stored documents from LocalStorage
+ * Get all stored documents from LocalStorage (cached to satisfy useSyncExternalStore reference stability)
  */
 export function getDocuments(): Document[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_DOCS);
-    if (!raw) return [];
+    const raw = localStorage.getItem(STORAGE_KEY_DOCS) || '[]';
+    if (raw === cachedDocsRaw) {
+      return cachedDocsResult;
+    }
+    cachedDocsRaw = raw;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    cachedDocsResult = Array.isArray(parsed) ? parsed : [];
+    return cachedDocsResult;
   } catch (e) {
     console.error('Failed to parse documents from localStorage', e);
-    return [];
+    return cachedDocsResult;
   }
 }
 
