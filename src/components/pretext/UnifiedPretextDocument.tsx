@@ -57,6 +57,9 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
 }) => {
   const [hoveredObsId, setHoveredObsId] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [draggingObsId, setDraggingObsId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
 
   // Filter obstacles relevant to current context
   const activeObstacles = obstacles.filter((obs) => {
@@ -75,8 +78,53 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
     setTimeout(() => setCopiedText(null), 1500);
   };
 
+  const handleObstaclePointerDown = (e: React.PointerEvent, obs: PretextObstacle) => {
+    if (!isInteractive) return;
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setDraggingObsId(obs.id);
+    setDragOffset({ x: x - obs.x, y: y - obs.y });
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    e.stopPropagation();
+  };
+
+  const handleObstaclePointerMove = (e: React.PointerEvent) => {
+    if (!draggingObsId || !onUpdateObstacle) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const targetObs = activeObstacles.find((o) => o.id === draggingObsId);
+    if (!targetObs) return;
+
+    const newX = Math.max(0, Math.min(container.clientWidth - targetObs.width, x - dragOffset.x));
+    const newY = Math.max(0, Math.min(container.clientHeight - targetObs.height, y - dragOffset.y));
+
+    onUpdateObstacle(draggingObsId, { x: newX, y: newY });
+  };
+
+  const handleObstaclePointerUp = (e: React.PointerEvent) => {
+    if (draggingObsId) {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {}
+      setDraggingObsId(null);
+    }
+  };
+
   return (
     <div
+      ref={containerRef}
+      onPointerMove={handleObstaclePointerMove}
+      onPointerUp={handleObstaclePointerUp}
       className={`relative w-full rounded-2xl sm:rounded-3xl p-5 sm:p-8 bg-zinc-950/80 border border-white/10 shadow-2xl backdrop-blur-xl transition-all duration-300 ${className}`}
       style={{
         minHeight: '440px',
@@ -117,55 +165,42 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
             </button>
           )}
 
-          {docType === 'slide' && onSlideChange && slidesCount > 1 && (
-            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
-              <button
-                onClick={() => onSlideChange(Math.max(0, activeSlideIndex - 1))}
-                disabled={activeSlideIndex === 0}
-                className="px-2 py-1 rounded text-xs font-mono text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
-              >
-                ◀ Назад
-              </button>
-              <button
-                onClick={() => onSlideChange(Math.min(slidesCount - 1, activeSlideIndex + 1))}
-                disabled={activeSlideIndex >= slidesCount - 1}
-                className="px-2 py-1 rounded text-xs font-mono text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
-              >
-                Вперед ▶
-              </button>
-            </div>
-          )}
+          
         </div>
       </div>
 
-      {/* Main Flow Content with CSS Shapes Float Wrapping */}
-      <div className="relative text-zinc-100 text-sm leading-relaxed overflow-hidden clearfix">
+      {/* Main Flow Content with Absolute Positioned Draggable Stickers */}
+      <div className="relative text-zinc-100 text-sm leading-relaxed overflow-hidden min-h-[360px]">
         {/* Render Floating Geometric Obstacles & Stickers */}
         {activeObstacles.map((obs) => {
           const themeKey = obs.theme || (obs.kind === 'badge' ? 'amber' : obs.kind === 'quote' ? 'cyan' : 'violet');
           const theme = THEME_COLORS[themeKey] || THEME_COLORS.violet;
-          const align = obs.align || 'right';
           const isCircle = obs.shape === 'circle';
           const isHovered = hoveredObsId === obs.id;
+          const isDragging = draggingObsId === obs.id;
 
-          const floatStyle: React.CSSProperties = {
-            float: align === 'left' ? 'left' : 'right',
+          const absStyle: React.CSSProperties = {
+            position: 'absolute',
+            left: `${obs.x}px`,
+            top: `${obs.y}px`,
             width: `${obs.width}px`,
             height: `${obs.height}px`,
-            margin: align === 'left' ? `0 ${gap * 1.5}px ${gap}px 0` : `0 0 ${gap}px ${gap * 1.5}px`,
-            shapeOutside: isCircle ? 'circle(50%)' : 'margin-box',
             borderRadius: isCircle ? '9999px' : '16px',
-            borderColor: theme.border,
+            borderColor: isDragging ? '#e879f9' : theme.border,
             boxShadow: `0 0 28px ${theme.border}35, inset 0 0 15px ${theme.border}15`,
+            touchAction: 'none',
+            cursor: 'grab',
+            zIndex: isDragging ? 50 : 10,
           };
 
           return (
             <div
               key={obs.id}
-              style={floatStyle}
+              style={absStyle}
+              onPointerDown={(e) => handleObstaclePointerDown(e, obs)}
               onMouseEnter={() => isInteractive && setHoveredObsId(obs.id)}
               onMouseLeave={() => isInteractive && setHoveredObsId(null)}
-              className="relative select-none overflow-hidden group/obs transition-all duration-300 flex flex-col items-center justify-center p-3 text-center border backdrop-blur-md"
+              className="absolute select-none overflow-hidden group/obs transition-shadow duration-300 flex flex-col items-center justify-center p-3 text-center border backdrop-blur-md"
             >
               {/* Sticker Background Fill */}
               <div
@@ -216,23 +251,10 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
                 </div>
               )}
 
-              {/* Hover Overlay Controls (Align Switch, Shape Switch, Delete) */}
+              {/* Hover Overlay Controls (Shape Switch, Delete) */}
               {isInteractive && isHovered && onUpdateObstacle && onRemoveObstacle && (
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-1.5 p-2 rounded-inherit animate-fadeIn">
                   <div className="flex items-center gap-1.5">
-                    {/* Switch Float Left / Right */}
-                    <button
-                      onClick={() =>
-                        onUpdateObstacle(obs.id, {
-                          align: align === 'left' ? 'right' : 'left',
-                        })
-                      }
-                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs transition-colors"
-                      title={align === 'left' ? 'Переместить вправо' : 'Переместить влево'}
-                    >
-                      {align === 'left' ? <AlignRight className="w-3.5 h-3.5" /> : <AlignLeft className="w-3.5 h-3.5" />}
-                    </button>
-
                     {/* Switch Shape Circle / Rect */}
                     <button
                       onClick={() =>
@@ -256,7 +278,7 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
                     </button>
                   </div>
                   <span className="text-[9px] font-mono text-zinc-400">
-                    {obs.width}×{obs.height}px
+                    {obs.width}×{obs.height}px · Перетащите мышкой
                   </span>
                 </div>
               )}

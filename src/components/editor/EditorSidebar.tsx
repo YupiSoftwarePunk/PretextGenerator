@@ -146,22 +146,6 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
               {(activeSlideIndex || 0) + 1} из {slidesCount || 1}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onSlideChange((activeSlideIndex || 0) - 1)}
-              disabled={(activeSlideIndex || 0) === 0}
-              className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 disabled:opacity-40 transition-colors"
-            >
-              ◀ Назад
-            </button>
-            <button
-              onClick={() => onSlideChange((activeSlideIndex || 0) + 1)}
-              disabled={(activeSlideIndex || 0) >= (slidesCount || 1) - 1}
-              className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 disabled:opacity-40 transition-colors"
-            >
-              Вперед ▶
-            </button>
-          </div>
           <button
             onClick={onAddSlide}
             className="w-full py-2 px-3 rounded-xl bg-cyan-600/30 border border-cyan-500/40 text-xs text-cyan-200 hover:bg-cyan-600/50 transition-all font-mono flex items-center justify-center gap-1.5"
