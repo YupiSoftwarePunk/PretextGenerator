@@ -745,7 +745,7 @@ function EditorContent() {
           {/* Gap Slider */}
           <div className="pt-2 border-t border-white/10">
             <div className="flex justify-between text-xs font-mono mb-1.5">
-              <span className="text-zinc-400">Отступ (Gap)</span>
+              <span className="text-zinc-400">Отступ</span>
               <span className="text-cyan-400 font-bold">{gap} px</span>
             </div>
             <input

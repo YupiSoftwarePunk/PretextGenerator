@@ -389,10 +389,6 @@ export const PlaygroundArena: React.FC = () => {
     <section id="sandbox" className="w-full max-w-7xl mx-auto px-6 py-20">
       {/* Section Header */}
       <div className="text-center mb-12 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-mono">
-          <Sliders className="w-3.5 h-3.5" />
-          <span>INTERACTIVE SANDBOX ARENA</span>
-        </div>
         <h2 className="text-4xl sm:text-5xl font-extrabold text-white">
           Песочница препятствий
         </h2>
@@ -436,7 +432,7 @@ export const PlaygroundArena: React.FC = () => {
             {/* Safe Margin / Gap */}
             <div>
               <div className="flex justify-between text-xs font-mono mb-1.5">
-                <span className="text-zinc-400">Отступ (Safe Gap)</span>
+                <span className="text-zinc-400">Отступ</span>
                 <span className="text-cyan-400 font-bold">{gap} px</span>
               </div>
               <input
@@ -564,9 +560,6 @@ export const PlaygroundArena: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-mono text-zinc-300 font-semibold uppercase">
-                  Arena Active
-                </span>
                 <button
                   onClick={() => setIsAutoFloat(!isAutoFloat)}
                   className={`ml-2 px-2.5 py-0.5 rounded text-[11px] font-mono border transition-all ${

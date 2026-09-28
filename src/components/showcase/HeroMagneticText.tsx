@@ -190,13 +190,6 @@ export const HeroMagneticText: React.FC = () => {
 
   return (
     <section className="relative z-10 w-full max-w-5xl mx-auto pt-12 pb-20 px-6 flex flex-col items-center text-center">
-      {/* Top Tech Badge */}
-      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-        <span className="text-xs font-mono font-medium text-cyan-300">
-          PRETEXT CORE ENGINE v2.0 • 0 DOM REFLOWS
-        </span>
-      </div>
 
       {/* Main Hero Headline */}
       <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">

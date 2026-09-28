@@ -107,10 +107,6 @@ export const InteractiveFormatsSection: React.FC = () => {
     <section id="formats" className="w-full max-w-7xl mx-auto px-6 py-20">
       {/* Section Header */}
       <div className="text-center mb-16 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-mono">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>INTERACTIVE FORMATS SHOWCASE</span>
-        </div>
         <h2 className="text-4xl sm:text-5xl font-extrabold text-white">
           Форматы нового поколения
         </h2>

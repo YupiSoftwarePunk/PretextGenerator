@@ -378,10 +378,6 @@ export const CyberEditorialSpread: React.FC = () => {
     <section className="w-full max-w-7xl mx-auto px-6 py-20">
       {/* Section Header */}
       <div className="text-center mb-12 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-mono">
-          <BookOpen className="w-3.5 h-3.5" />
-          <span>CYBER-EDITORIAL SPREAD</span>
-        </div>
         <h2 className="text-4xl sm:text-5xl font-extrabold text-white">
           Журнальный разворот будущего
         </h2>
