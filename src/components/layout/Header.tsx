@@ -28,13 +28,9 @@ export const Header: React.FC<HeaderProps> = ({ showAnchorLinks = false }) => {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-extrabold gradient-text leading-none tracking-tight">
-                Pretext Core
+                Pretext Generator
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
-            <span className="text-[10px] font-mono text-zinc-400 block tracking-wider">
-              120 FPS TYPOGRAPHY
-            </span>
           </div>
         </Link>
 

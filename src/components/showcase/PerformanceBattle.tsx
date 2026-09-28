@@ -252,7 +252,7 @@ export const PerformanceBattle: React.FC = () => {
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/30 transition-all"
                   >
                     <Play className="w-3.5 h-3.5" />
-                    <span>Запустить 120 FPS Стресс-тест</span>
+                    <span>Запустить Стресс-тест</span>
                   </button>
                 </div>
               )}

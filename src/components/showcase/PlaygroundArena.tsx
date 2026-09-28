@@ -559,7 +559,6 @@ export const PlaygroundArena: React.FC = () => {
             {/* Top Arena Header & HUD */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                 <button
                   onClick={() => setIsAutoFloat(!isAutoFloat)}
                   className={`ml-2 px-2.5 py-0.5 rounded text-[11px] font-mono border transition-all ${

@@ -178,10 +178,6 @@ export default function GalleryPage() {
         {/* Gallery Hero & Search Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-mono mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>PRETEXT SHOWCASE GALLERY</span>
-            </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white">Галерея документов</h1>
             <p className="text-zinc-400 text-sm mt-1">
               Просматривайте шаблоны, созданные презентации, карточки и справочники.

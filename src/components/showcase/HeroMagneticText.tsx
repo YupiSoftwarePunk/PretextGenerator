@@ -223,14 +223,6 @@ export const HeroMagneticText: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
             <span>Двигайте мышь внутри блока:</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <span className="text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-              <Zap className="w-3 h-3" />
-              ~{computeTimeMs.toFixed(2)} ms
-            </span>
-            <span className="text-zinc-500 hidden sm:inline">120 FPS</span>
-          </div>
         </div>
 
         {/* Canvas for kinetic magnetic text */}

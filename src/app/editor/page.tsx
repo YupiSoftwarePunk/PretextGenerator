@@ -43,7 +43,7 @@ const PRESETS: Record<DocumentType, { obstacles: Omit<PretextObstacle, 'id'>[]; 
     obstacles: [
       {
         x: 280, y: 50, width: 180, height: 130, shape: 'rect', gap: 16,
-        kind: 'badge', label: '⚡ 120 FPS',
+        kind: 'badge', label: '',
       },
     ],
     text: 'Pretext Engine обеспечивает стабильные 120 FPS при обтекании любых визуальных объектов. Математический расчёт координат выполняется полностью на JavaScript без единого DOM reflow. Текст плавно огибает карточку метрики, сохраняя читаемость и структуру контента даже при динамическом изменении положения препятствия.',
@@ -52,7 +52,7 @@ const PRESETS: Record<DocumentType, { obstacles: Omit<PretextObstacle, 'id'>[]; 
     obstacles: [
       {
         x: 170, y: 60, width: 130, height: 130, shape: 'circle', gap: 14,
-        kind: 'image', label: '🖼 Media',
+        kind: 'image', label: '',
       },
     ],
     text: 'Флэшкард с центральной графической иконкой демонстрирует возможности алгоритма Pretext: текст равномерно распределяется вокруг круглого препятствия, создавая натуральное и органичное обтекание. Каждое слово точно позиционируется в пространстве документа.',
@@ -61,7 +61,7 @@ const PRESETS: Record<DocumentType, { obstacles: Omit<PretextObstacle, 'id'>[]; 
     obstacles: [
       {
         x: 30, y: 80, width: 160, height: 100, shape: 'rect', gap: 12,
-        kind: 'quote', label: '💬 Важно',
+        kind: 'quote', label: '',
       },
     ],
     text: 'Шпаргалка со стикером важного замечания. Текст документа автоматически уступает место цитате-стикеру и продолжает поток справа и снизу. Pretext гарантирует что ни одно слово не перекрывает визуальный блок.',
@@ -919,14 +919,13 @@ function EditorContent() {
                       <Move className="w-3 h-3 text-violet-400" />
                       <span>Тяните препятствия мышкой — текст огибает в реальном времени</span>
                     </span>
-                    <span className="text-emerald-400 font-bold">120 FPS</span>
                   </div>
 
                   {/* Obstacle type legend */}
                   <div className="flex items-center gap-3 mb-2 text-[10px] font-mono">
-                    <span className="text-violet-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-500 inline-block" />🖼 Медиа</span>
-                    <span className="text-cyan-400 flex items-center gap-1"><span className="w-2 h-2 rounded bg-cyan-500 inline-block" />💬 Цитата</span>
-                    <span className="text-amber-400 flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-500 inline-block" />⚡ Бейдж</span>
+                    <span className="text-violet-400 flex items-center gap-1">🖼 Медиа</span>
+                    <span className="text-cyan-400 flex items-center gap-1">💬 Цитата</span>
+                    <span className="text-amber-400 flex items-center gap-1">⚡ Бейдж</span>
                   </div>
 
                   <canvas
