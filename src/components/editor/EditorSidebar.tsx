@@ -12,7 +12,7 @@ import {
   Quote,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
-import { ObstacleKind, PretextObstacle } from '../../app/editor/types';
+import { ObstacleKind, PretextObstacle } from './types';
 import { getTemplatesByType } from '@/lib/templates';
 
 interface EditorSidebarProps {
