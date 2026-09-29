@@ -188,12 +188,21 @@ export const CyberEditorialSpread: React.FC = () => {
   const updateWidth = useCallback(() => {
     if (stageRef.current) {
       const w = stageRef.current.clientWidth;
-      containerWidthRef.current = Math.max(300, w);
+      containerWidthRef.current = Math.max(220, w);
+      const isMobile = window.innerWidth < 640;
       engineRef.current = new PretextEngine({
         containerWidth: containerWidthRef.current,
-        fontSize: 15,
+        fontSize: isMobile ? 13 : 15,
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        lineHeight: 25,
+        lineHeight: isMobile ? 22 : 25,
+      });
+
+      // Clamp pull quote card width and position on mobile screens
+      const maxCardW = Math.min(270, containerWidthRef.current - 16);
+      setPullQuotePos((prev) => {
+        const width = Math.max(180, maxCardW);
+        const x = Math.max(8, Math.min(containerWidthRef.current - width - 8, prev.x));
+        return { ...prev, width, x };
       });
     }
   }, []);
@@ -223,7 +232,7 @@ export const CyberEditorialSpread: React.FC = () => {
       if (!ctx) return;
 
       const currentWidth = containerWidthRef.current;
-      const currentHeight = 420;
+      const currentHeight = window.innerWidth < 640 ? 460 : 420;
       const dpr = window.devicePixelRatio || 1;
 
       if (canvas.width !== currentWidth * dpr || canvas.height !== currentHeight * dpr) {
@@ -238,13 +247,16 @@ export const CyberEditorialSpread: React.FC = () => {
       ctx.clearRect(0, 0, currentWidth, currentHeight);
 
       const activeObs = [pullQuoteRef.current];
+      const isMobile = window.innerWidth < 640;
+      const fontSize = isMobile ? 13 : 15;
+      const lineHeight = isMobile ? 22 : 25;
 
       if (!engineRef.current || engineRef.current['config']?.containerWidth !== currentWidth) {
         engineRef.current = new PretextEngine({
           containerWidth: currentWidth,
-          fontSize: 15,
+          fontSize,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          lineHeight: 25,
+          lineHeight,
         });
       }
 
@@ -255,7 +267,7 @@ export const CyberEditorialSpread: React.FC = () => {
       );
 
       // Render flowing article text words
-      ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       ctx.fillStyle = '#d4d4d8';
       ctx.textBaseline = 'alphabetic';
 
@@ -334,10 +346,11 @@ export const CyberEditorialSpread: React.FC = () => {
   };
 
   const handleResetPosition = () => {
+    const cardW = Math.min(270, containerWidthRef.current - 16);
     const defaultPos: Obstacle = {
-      x: Math.max(120, Math.floor(containerWidthRef.current / 2 - 135)),
-      y: 50,
-      width: 270,
+      x: Math.max(8, Math.floor((containerWidthRef.current - cardW) / 2)),
+      y: 40,
+      width: cardW,
       height: 240,
       shape: 'rect',
       gap: 16,
@@ -375,36 +388,36 @@ export const CyberEditorialSpread: React.FC = () => {
   if (!isMounted) return null;
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-6 py-20">
+    <section id="magazine" className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
       {/* Section Header */}
-      <div className="text-center mb-12 space-y-3">
-        <h2 className="text-4xl sm:text-5xl font-extrabold text-white">
+      <div className="text-center mb-8 sm:mb-12 space-y-2 sm:space-y-3">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
           Журнальный разворот будущего
         </h2>
-        <p className="text-zinc-400 max-w-2xl mx-auto text-base">
+        <p className="text-zinc-400 max-w-2xl mx-auto text-sm sm:text-base">
           Премиальная верстка с динамической медиа-врезкой. Захватите карточку мышкой и перемещайте её в любую точку разворота.
         </p>
       </div>
 
       {/* Magazine Container */}
       <div
-        className={`relative w-full glass-card rounded-3xl p-8 sm:p-12 border ${themeColors.border} ${themeColors.glow} backdrop-blur-2xl overflow-hidden transition-all duration-500`}
+        className={`relative w-full glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-12 border ${themeColors.border} ${themeColors.glow} backdrop-blur-2xl overflow-hidden transition-all duration-500`}
       >
         {/* Top Control Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b border-white/10 text-xs font-mono">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 mb-6 sm:mb-8 border-b border-white/10 text-xs font-mono">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className={`px-2.5 py-1 rounded-lg border font-bold ${themeColors.tagBg}`}>
               {article.category}
             </span>
-            <span className="text-zinc-500">{article.readTime}</span>
+            <span className="text-zinc-500 text-[11px] sm:text-xs">{article.readTime}</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {/* Topic Switcher */}
             <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
               <button
                 onClick={() => setActiveArticleKey('future')}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all min-h-[36px] ${
                   activeArticleKey === 'future'
                     ? 'bg-violet-600 text-white shadow'
                     : 'text-zinc-400 hover:text-white'
@@ -414,7 +427,7 @@ export const CyberEditorialSpread: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveArticleKey('quantum')}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all min-h-[36px] ${
                   activeArticleKey === 'quantum'
                     ? 'bg-violet-600 text-white shadow'
                     : 'text-zinc-400 hover:text-white'
@@ -427,31 +440,31 @@ export const CyberEditorialSpread: React.FC = () => {
             {/* Reset Position Button */}
             <button
               onClick={handleResetPosition}
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white border border-white/10 transition-colors"
+              className="w-9 h-9 min-h-[36px] flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white border border-white/10 transition-colors"
               title="Сбросить позицию врезки"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
 
             {/* Theme picker */}
-            <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
               <button
                 onClick={() => setTheme('violet')}
-                className={`w-4 h-4 rounded-full bg-violet-500 transition-transform ${
+                className={`w-5 h-5 rounded-full bg-violet-500 transition-transform ${
                   theme === 'violet' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                 }`}
                 title="Неоновый фиолетовый"
               />
               <button
                 onClick={() => setTheme('cyan')}
-                className={`w-4 h-4 rounded-full bg-cyan-400 transition-transform ${
+                className={`w-5 h-5 rounded-full bg-cyan-400 transition-transform ${
                   theme === 'cyan' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                 }`}
                 title="Кибер-голубой"
               />
               <button
                 onClick={() => setTheme('emerald')}
-                className={`w-4 h-4 rounded-full bg-emerald-400 transition-transform ${
+                className={`w-5 h-5 rounded-full bg-emerald-400 transition-transform ${
                   theme === 'emerald' ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                 }`}
                 title="Изумрудный"
@@ -461,11 +474,11 @@ export const CyberEditorialSpread: React.FC = () => {
         </div>
 
         {/* Title */}
-        <div className="mb-6 space-y-1.5">
-          <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+        <div className="mb-4 sm:mb-6 space-y-1.5">
+          <h3 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight">
             {article.title}
           </h3>
-          <p className="text-zinc-400 text-sm sm:text-base font-medium max-w-xl">
+          <p className="text-zinc-400 text-xs sm:text-sm md:text-base font-medium max-w-xl">
             {article.subtitle}
           </p>
         </div>
@@ -473,7 +486,7 @@ export const CyberEditorialSpread: React.FC = () => {
         {/* Text Stage with Draggable Media Obstacle Card */}
         <div
           ref={stageRef}
-          className="relative w-full min-h-[420px] h-[420px] cursor-default select-none overflow-hidden rounded-2xl bg-zinc-950/40 p-4 border border-white/5"
+          className="relative w-full min-h-[460px] h-[460px] sm:min-h-[420px] sm:h-[420px] cursor-default select-none overflow-hidden rounded-2xl bg-zinc-950/40 p-4 border border-white/5"
         >
           {/* Flowing Text Canvas */}
           <canvas ref={canvasRef} className="absolute inset-0 block pointer-events-none" />

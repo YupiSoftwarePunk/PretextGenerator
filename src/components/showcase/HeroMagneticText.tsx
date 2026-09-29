@@ -31,13 +31,15 @@ export const HeroMagneticText: React.FC = () => {
 
   const updateWidth = useCallback(() => {
     if (containerRef.current) {
-      const w = containerRef.current.clientWidth - 48;
-      containerWidthRef.current = Math.max(300, w);
+      const padding = window.innerWidth < 640 ? 32 : 64;
+      const w = containerRef.current.clientWidth - padding;
+      containerWidthRef.current = Math.max(220, w);
+      const isMobile = window.innerWidth < 640;
       engineRef.current = new PretextEngine({
         containerWidth: containerWidthRef.current,
-        fontSize: 17,
+        fontSize: isMobile ? 13 : 17,
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        lineHeight: 28,
+        lineHeight: isMobile ? 22 : 28,
       });
     }
   }, []);
@@ -88,7 +90,7 @@ export const HeroMagneticText: React.FC = () => {
 
       const obstacles: Obstacle[] = [];
       if (cursor.active && cursor.x > -100) {
-        const orbRadius = 55;
+        const orbRadius = currentWidth < 400 ? 42 : 55;
         obstacles.push({
           x: cursor.x - orbRadius,
           y: cursor.y - orbRadius,
@@ -123,12 +125,16 @@ export const HeroMagneticText: React.FC = () => {
       }
 
       // Pretext Layout Calculation
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+      const fontSize = isMobile ? 13 : 17;
+      const lineHeight = isMobile ? 22 : 28;
+
       if (!engineRef.current || engineRef.current['config']?.containerWidth !== currentWidth) {
         engineRef.current = new PretextEngine({
           containerWidth: currentWidth,
-          fontSize: 17,
+          fontSize,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          lineHeight: 28,
+          lineHeight,
         });
       }
 
@@ -146,7 +152,7 @@ export const HeroMagneticText: React.FC = () => {
       }
 
       // Draw Words
-      ctx.font = '500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       ctx.fillStyle = '#e4e4e7';
       ctx.textBaseline = 'alphabetic';
 
@@ -173,6 +179,23 @@ export const HeroMagneticText: React.FC = () => {
     if (!isHovered) setIsHovered(true);
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.setPointerCapture(e.pointerId);
+    const rect = canvas.getBoundingClientRect();
+    cursorRef.current.targetX = e.clientX - rect.left;
+    cursorRef.current.targetY = e.clientY - rect.top;
+    cursorRef.current.active = true;
+    setIsHovered(true);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (canvasRef.current && canvasRef.current.hasPointerCapture(e.pointerId)) {
+      canvasRef.current.releasePointerCapture(e.pointerId);
+    }
+  };
+
   const handlePointerLeave = () => {
     cursorRef.current.active = false;
     cursorRef.current.targetX = -300;
@@ -182,30 +205,29 @@ export const HeroMagneticText: React.FC = () => {
 
   if (!isMounted) {
     return (
-      <div className="w-full max-w-4xl mx-auto h-[400px] flex items-center justify-center text-zinc-500 animate-pulse">
+      <div className="w-full max-w-4xl mx-auto h-[300px] flex items-center justify-center text-zinc-500 animate-pulse">
         Загрузка интерактивного движка...
       </div>
     );
   }
 
   return (
-    <section className="relative z-10 w-full max-w-5xl mx-auto pt-12 pb-20 px-6 flex flex-col items-center text-center">
-
+    <section className="relative z-10 w-full max-w-5xl mx-auto pt-8 sm:pt-12 pb-12 sm:pb-20 px-4 sm:px-6 flex flex-col items-center text-center">
       {/* Main Hero Headline */}
-      <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
+      <h1 className="text-3xl sm:text-5xl md:text-7xl font-extrabold tracking-tight mb-4 sm:mb-6 leading-[1.15]">
         <span className="gradient-text">Живая типографика</span>
         <br />
         <span className="text-white">будущего в вебе</span>
       </h1>
 
-      <p className="text-zinc-400 text-lg sm:text-xl max-w-2xl mb-8 leading-relaxed">
+      <p className="text-zinc-400 text-sm sm:text-base md:text-xl max-w-2xl mb-6 sm:mb-8 leading-relaxed px-2">
         Сверхбыстрое математическое обтекание препятствий в реальном времени. Без фризов, без пересчетов макета DOM.
       </p>
 
       {/* Interactive Kinetic Text Canvas Box */}
       <div
         ref={containerRef}
-        className="relative w-full max-w-4xl border border-violet-500/30 rounded-3xl p-6 sm:p-8 bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_60px_rgba(139,92,246,0.2)] overflow-hidden mb-10 group"
+        className="relative w-full max-w-4xl border border-violet-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_60px_rgba(139,92,246,0.2)] overflow-hidden mb-8 sm:mb-10 group"
       >
         {/* Subtle grid pattern */}
         <div
@@ -218,29 +240,32 @@ export const HeroMagneticText: React.FC = () => {
         />
 
         {/* HUD Info */}
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10 text-xs font-mono">
+        <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 sm:pb-3 border-b border-white/10 text-[11px] sm:text-xs font-mono">
           <div className="flex items-center gap-2 text-violet-300">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Двигайте мышь внутри блока:</span>
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="truncate">Двигайте палец или курсор внутри:</span>
           </div>
         </div>
 
         {/* Canvas for kinetic magnetic text */}
-        <div className="w-full h-[220px] cursor-crosshair relative">
+        <div className="w-full h-[200px] sm:h-[220px] cursor-crosshair relative">
           <canvas
             ref={canvasRef}
+            onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerLeave}
             onPointerLeave={handlePointerLeave}
-            className="block w-full h-full touch-none"
+            className="block w-full h-full touch-none select-none"
           />
         </div>
       </div>
 
       {/* Call to Action Buttons */}
-      <div className="flex flex-wrap items-center justify-center gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-2 sm:px-0">
         <a
           href="#sandbox"
-          className="flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-sm shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:scale-105 transition-all"
+          className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-sm shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:scale-105 transition-all min-h-[44px]"
         >
           <span>Исследовать песочницу</span>
           <ArrowDown className="w-4 h-4 animate-bounce" />
@@ -248,7 +273,7 @@ export const HeroMagneticText: React.FC = () => {
 
         <Link
           href="/editor"
-          className="flex items-center gap-2 px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-violet-500/50 text-zinc-200 font-semibold text-sm transition-all"
+          className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-violet-500/50 text-zinc-200 font-semibold text-sm transition-all min-h-[44px]"
         >
           <Code2 className="w-4 h-4 text-violet-400" />
           <span>Открыть Pretext Studio</span>

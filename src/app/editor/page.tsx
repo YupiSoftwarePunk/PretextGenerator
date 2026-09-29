@@ -21,6 +21,7 @@ import {
   Zap,
   Move,
   RotateCcw,
+  Sliders,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { getTemplatesByType } from '@/lib/templates';
@@ -252,6 +253,7 @@ function EditorContent() {
     }
   }, []);
 
+  const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<'editor' | 'settings' | 'preview'>('editor');
   const [activeTab, setActiveTab] = useState<'flow' | 'card'>('flow');
   const [copied, setCopied] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -277,8 +279,9 @@ function EditorContent() {
 
   const updateContainerWidth = useCallback(() => {
     if (containerRef.current) {
-      const w = containerRef.current.clientWidth - 48;
-      containerWidthRef.current = Math.max(300, w);
+      const padding = window.innerWidth < 640 ? 32 : 48;
+      const w = containerRef.current.clientWidth - padding;
+      containerWidthRef.current = Math.max(220, w);
     }
   }, []);
 
@@ -287,6 +290,13 @@ function EditorContent() {
     window.addEventListener('resize', updateContainerWidth);
     return () => window.removeEventListener('resize', updateContainerWidth);
   }, [updateContainerWidth]);
+
+  // Re-measure container width when switching mobile tabs to preview
+  useEffect(() => {
+    if (mobileWorkspaceTab === 'preview') {
+      setTimeout(updateContainerWidth, 60);
+    }
+  }, [mobileWorkspaceTab, updateContainerWidth]);
 
   // ── Main 120FPS Canvas Render Loop ─────────────────────────────────────────
   useEffect(() => {
@@ -305,7 +315,7 @@ function EditorContent() {
       if (!ctx) return;
 
       const currentWidth = containerWidthRef.current;
-      const currentHeight = 400;
+      const currentHeight = window.innerWidth < 640 ? 350 : 400;
       const dpr = window.devicePixelRatio || 1;
 
       if (canvas.width !== currentWidth * dpr || canvas.height !== currentHeight * dpr) {
@@ -404,8 +414,9 @@ function EditorContent() {
     const targetObs = obstaclesRef.current[draggingIdx];
     if (!targetObs) return;
 
+    const canvasHeight = window.innerWidth < 640 ? 340 : 390;
     const newX = Math.max(0, Math.min(currentWidth - targetObs.width, px - dragOffsetRef.current.x));
-    const newY = Math.max(0, Math.min(390 - targetObs.height, py - dragOffsetRef.current.y));
+    const newY = Math.max(0, Math.min(canvasHeight - targetObs.height, py - dragOffsetRef.current.y));
 
     const updated = [...obstaclesRef.current];
     updated[draggingIdx] = { ...targetObs, x: newX, y: newY };
@@ -596,355 +607,418 @@ function EditorContent() {
     <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col font-sans">
       <Header />
 
-      <div className="flex-1 flex flex-col lg:flex-row pt-16 overflow-hidden">
-        {/* ── Left Sidebar ──────────────────────────────────────────── */}
-        <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/60 p-5 flex flex-col gap-5 overflow-y-auto">
-          {/* Document type */}
-          <div>
-            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
-              Формат документа
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['slide', 'card', 'cheatsheet'] as DocumentType[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => handleTypeChange(t)}
-                  className={`py-2 px-3 rounded-xl text-xs font-medium font-mono transition-all border ${
-                    docType === t
-                      ? 'bg-violet-600/30 border-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]'
-                      : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'
-                  }`}
-                >
-                  {t === 'slide' ? 'Слайд' : t === 'card' ? 'Карточка' : 'Шпаргалка'}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="flex-1 flex flex-col pt-16 overflow-hidden">
+        {/* Mobile Workspace Tabs switcher (< lg) */}
+        <div className="lg:hidden flex items-center bg-zinc-950/95 border-b border-white/10 px-3 py-2 gap-1.5 shrink-0 z-20 backdrop-blur-xl">
+          <button
+            onClick={() => setMobileWorkspaceTab('editor')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-mono font-semibold min-h-[42px] transition-all border ${
+              mobileWorkspaceTab === 'editor'
+                ? 'bg-violet-600/30 border-violet-500 text-white shadow-[0_0_12px_rgba(139,92,246,0.3)]'
+                : 'bg-white/5 border-transparent text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Code className="w-3.5 h-3.5 text-violet-400" />
+            <span>Редактор</span>
+          </button>
 
-          {/* Pretext Obstacles Panel */}
-          <div className="pt-3 border-t border-white/10 space-y-3">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-zinc-300 font-bold uppercase flex items-center gap-1.5">
-                <Move className="w-3.5 h-3.5 text-violet-400" />
-                Препятствия Pretext
-              </span>
-              <span className="text-violet-400 font-semibold">{obstacles.length}</span>
-            </div>
-            <p className="text-[11px] text-zinc-500 leading-relaxed">
-              Добавляйте визуальные блоки — текст документа будет огибать их в реальном времени.
-            </p>
-
-            {/* Add buttons */}
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                onClick={() => handleAddObstacle('image')}
-                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl bg-violet-950/50 border border-violet-500/30 text-xs text-violet-300 hover:bg-violet-900/50 transition-colors font-mono"
-                title="Добавить медиа-изображение"
-              >
-                <ImageIcon className="w-4 h-4" />
-                <span className="text-[10px]">Медиа</span>
-              </button>
-              <button
-                onClick={() => handleAddObstacle('quote')}
-                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl bg-cyan-950/50 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-900/50 transition-colors font-mono"
-                title="Добавить цитату-стикер"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span className="text-[10px]">Цитата</span>
-              </button>
-              <button
-                onClick={() => handleAddObstacle('badge')}
-                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl bg-amber-950/50 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-900/50 transition-colors font-mono"
-                title="Добавить инфо-бейдж"
-              >
-                <Zap className="w-4 h-4" />
-                <span className="text-[10px]">Бейдж</span>
-              </button>
-            </div>
-
-            {/* Obstacle List */}
+          <button
+            onClick={() => setMobileWorkspaceTab('settings')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-mono font-semibold min-h-[42px] transition-all border ${
+              mobileWorkspaceTab === 'settings'
+                ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                : 'bg-white/5 border-transparent text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Настройки</span>
             {obstacles.length > 0 && (
-              <div className="space-y-2.5">
-                {obstacles.map((obs) => (
-                  <div
-                    key={obs.id}
-                    className={`p-3 rounded-xl border text-xs font-mono space-y-2 ${kindColor[obs.kind]}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-bold">
-                        {obs.kind === 'image' ? '🖼' : obs.kind === 'quote' ? '💬' : '⚡'}
-                        <input
-                          type="text"
-                          value={obs.label}
-                          onChange={(e) => handleUpdateObstacle(obs.id, { label: e.target.value })}
-                          className="bg-black/40 border border-white/20 rounded px-1.5 py-0.5 text-white w-28 focus:outline-none focus:border-violet-400 text-xs"
-                          title="Текст на наклейке"
-                        />
-                      </span>
-                      <button
-                        onClick={() => handleRemoveObstacle(obs.id)}
-                        className="text-zinc-400 hover:text-rose-400 p-1"
-                        title="Удалить"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-[10px] text-zinc-300">
-                      <div>
-                        <div className="flex justify-between mb-0.5">
-                          <span>Ширина</span>
-                          <span className="text-violet-300 font-bold">{obs.width}px</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="80"
-                          max="260"
-                          value={obs.width}
-                          onChange={(e) => handleUpdateObstacle(obs.id, { width: Number(e.target.value) })}
-                          className="w-full accent-violet-400 h-1 bg-zinc-800 rounded cursor-pointer"
-                        />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-0.5">
-                          <span>Высота</span>
-                          <span className="text-violet-300 font-bold">{obs.height}px</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="50"
-                          max="180"
-                          value={obs.height}
-                          onChange={(e) => handleUpdateObstacle(obs.id, { height: Number(e.target.value) })}
-                          className="w-full accent-violet-400 h-1 bg-zinc-800 rounded cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={handleResetPreset}
-                    className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors font-mono border border-white/10 rounded-lg"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    Пресет
-                  </button>
-                  <button
-                    onClick={handleClearObstacles}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 transition-colors font-mono"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    Очистить
-                  </button>
-                </div>
-              </div>
+              <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] flex items-center justify-center font-mono">
+                {obstacles.length}
+              </span>
             )}
-          </div>
+          </button>
 
-          {/* Gap Slider */}
-          <div className="pt-2 border-t border-white/10">
-            <div className="flex justify-between text-xs font-mono mb-1.5">
-              <span className="text-zinc-400">Отступ</span>
-              <span className="text-cyan-400 font-bold">{gap} px</span>
-            </div>
-            <input
-              type="range"
-              min="6"
-              max="32"
-              value={gap}
-              onChange={(e) => setGap(Number(e.target.value))}
-              className="w-full accent-cyan-400 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
-            />
-          </div>
+          <button
+            onClick={() => setMobileWorkspaceTab('preview')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-mono font-semibold min-h-[42px] transition-all border ${
+              mobileWorkspaceTab === 'preview'
+                ? 'bg-pink-600/30 border-pink-500 text-white shadow-[0_0_12px_rgba(236,72,153,0.3)]'
+                : 'bg-white/5 border-transparent text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5 text-pink-400" />
+            <span>Превью</span>
+          </button>
+        </div>
 
-          {/* Snippet Shortcuts */}
-          <div className="pt-2 border-t border-white/10">
-            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-2.5 block font-mono">
-              Быстрые сниппеты
-            </label>
-            <div className="grid grid-cols-4 gap-1.5 font-mono text-[11px]">
-              <button
-                onClick={() => handleInsertSnippet('# Заголовок')}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
-                title="Заголовок H1"
-              >
-                <Heading className="w-3.5 h-3.5 text-violet-400" />
-                <span>H1</span>
-              </button>
-              <button
-                onClick={() => handleInsertSnippet('**Важный текст**')}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
-                title="Жирный"
-              >
-                <Bold className="w-3.5 h-3.5 text-cyan-400" />
-              </button>
-              <button
-                onClick={() => handleInsertSnippet('*Курсив*')}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
-                title="Курсив"
-              >
-                <Italic className="w-3.5 h-3.5 text-pink-400" />
-              </button>
-              <button
-                onClick={() => handleInsertSnippet('> Цитата-вынос')}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5"
-                title="Цитата"
-              >
-                <Quote className="w-3.5 h-3.5 text-amber-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Preset Templates */}
-          <div className="pt-2 border-t border-white/10">
-            <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
-              Готовые пресеты
-            </label>
-            <div className="space-y-2">
-              {getTemplatesByType(docType).map((tpl) => (
-                <button
-                  key={tpl.id}
-                  onClick={() => handleSelectTemplate(tpl)}
-                  className="w-full text-left p-3 rounded-xl bg-white/5 border border-white/5 hover:border-violet-500/40 hover:bg-white/10 transition-all group"
-                >
-                  <div className="text-sm font-semibold text-zinc-200 group-hover:text-white">
-                    {tpl.name}
-                  </div>
-                  <div className="text-xs text-zinc-500 mt-1 line-clamp-1">{tpl.description}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* ── Center: Editor + Preview ────────────────────────────── */}
-        <main className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden">
-          {/* Text Editor Pane */}
-          <div className="flex flex-col h-full bg-[#0c0c10]">
-            <div className="px-6 py-3 border-b border-white/10 flex items-center justify-between bg-zinc-950/40">
-              <span className="text-xs font-mono text-zinc-400 flex items-center gap-2">
-                <Code className="w-3.5 h-3.5 text-violet-400" />
-                <span>Текст документа</span>
-              </span>
-              <span className="text-[11px] text-zinc-500 font-mono">
-                {content.length} симв. | {content.split(/\s+/).filter(Boolean).length} слов
-              </span>
-            </div>
-
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Введите текст... Он будет огибать препятствия на холсте справа."
-              className="flex-1 w-full p-6 bg-transparent text-zinc-200 font-mono text-sm leading-relaxed resize-none focus:outline-none placeholder:text-zinc-700 min-h-[380px]"
-              spellCheck={false}
-            />
-          </div>
-
-          {/* Live Preview Pane */}
-          <div className="flex flex-col h-full bg-zinc-950/70 p-5 overflow-y-auto">
-            {/* Top Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-white/10">
-              {/* Tab Selector */}
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-                <button
-                  onClick={() => setActiveTab('flow')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold font-mono transition-all ${
-                    activeTab === 'flow'
-                      ? 'bg-violet-600 text-white shadow'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Pretext Flow</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('card')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold font-mono transition-all ${
-                    activeTab === 'card'
-                      ? 'bg-violet-600 text-white shadow'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Formatted</span>
-                </button>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleExportPNG}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-cyan-300 hover:bg-white/10 transition-colors"
-                  title="Экспорт Pretext-макета в PNG"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>PNG</span>
-                </button>
-
-                <button
-                  onClick={handleExportHTML}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-pink-300 hover:bg-white/10 transition-colors"
-                  title="Экспорт Pretext-макета в HTML"
-                >
-                  <FileCode className="w-3.5 h-3.5" />
-                  <span>HTML</span>
-                </button>
-
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 transition-colors"
-                  title="Копировать текст"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-
-                <button
-                  onClick={handleSaveToLocalStorage}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-xs shadow-md shadow-violet-600/30 transition-all"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{savedSuccess ? 'Сохранено!' : 'Сохранить'}</span>
-                </button>
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          {/* ── Left Sidebar (Settings & Tools) ──────────────────────────── */}
+          <aside
+            className={`${
+              mobileWorkspaceTab === 'settings' ? 'flex' : 'hidden'
+            } lg:flex w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/60 p-4 sm:p-5 flex-col gap-5 overflow-y-auto shrink-0 max-h-[calc(100vh-7.5rem)] lg:max-h-none`}
+          >
+            {/* Document type */}
+            <div>
+              <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
+                Формат документа
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['slide', 'card', 'cheatsheet'] as DocumentType[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => handleTypeChange(t)}
+                    className={`py-2.5 px-2 rounded-xl text-xs font-medium font-mono transition-all border min-h-[40px] flex items-center justify-center ${
+                      docType === t
+                        ? 'bg-violet-600/30 border-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]'
+                        : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'
+                    }`}
+                  >
+                    {t === 'slide' ? 'Слайд' : t === 'card' ? 'Карточка' : 'Шпаргалка'}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Renderer Stage */}
-            <div ref={containerRef} className="flex-1 flex items-start justify-center min-h-[400px]">
-              {activeTab === 'flow' ? (
-                <div className="w-full relative border border-violet-500/30 rounded-3xl p-5 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[420px] overflow-hidden">
-                  {/* Info bar */}
-                  <div className="text-[11px] font-mono text-zinc-500 mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Move className="w-3 h-3 text-violet-400" />
-                      <span>Тяните препятствия мышкой — текст огибает в реальном времени</span>
-                    </span>
-                  </div>
+            {/* Pretext Obstacles Panel */}
+            <div className="pt-3 border-t border-white/10 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-zinc-300 font-bold uppercase flex items-center gap-1.5">
+                  <Move className="w-3.5 h-3.5 text-violet-400" />
+                  Препятствия Pretext
+                </span>
+                <span className="text-violet-400 font-semibold">{obstacles.length}</span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-relaxed">
+                Добавляйте визуальные блоки — текст документа будет огибать их в реальном времени.
+              </p>
 
-                  {/* Obstacle type legend */}
-                  <div className="flex items-center gap-3 mb-2 text-[10px] font-mono">
-                    <span className="text-violet-400 flex items-center gap-1">🖼 Медиа</span>
-                    <span className="text-cyan-400 flex items-center gap-1">💬 Цитата</span>
-                    <span className="text-amber-400 flex items-center gap-1">⚡ Бейдж</span>
-                  </div>
+              {/* Add buttons */}
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  onClick={() => handleAddObstacle('image')}
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl bg-violet-950/50 border border-violet-500/30 text-xs text-violet-300 hover:bg-violet-900/50 transition-colors font-mono min-h-[44px]"
+                  title="Добавить медиа-изображение"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="text-[10px]">Медиа</span>
+                </button>
+                <button
+                  onClick={() => handleAddObstacle('quote')}
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl bg-cyan-950/50 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-900/50 transition-colors font-mono min-h-[44px]"
+                  title="Добавить цитату-стикер"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-[10px]">Цитата</span>
+                </button>
+                <button
+                  onClick={() => handleAddObstacle('badge')}
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl bg-amber-950/50 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-900/50 transition-colors font-mono min-h-[44px]"
+                  title="Добавить инфо-бейдж"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="text-[10px]">Бейдж</span>
+                </button>
+              </div>
 
-                  <canvas
-                    ref={canvasRef}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    className="block w-full cursor-grab active:cursor-grabbing touch-none"
-                    style={{ height: '400px' }}
-                  />
-                </div>
-              ) : (
-                <div className="w-full glass-card rounded-3xl p-8 border border-white/10 max-w-lg shadow-2xl">
-                  <PretextRenderer content={content} />
+              {/* Obstacle List */}
+              {obstacles.length > 0 && (
+                <div className="space-y-2.5">
+                  {obstacles.map((obs) => (
+                    <div
+                      key={obs.id}
+                      className={`p-3 rounded-xl border text-xs font-mono space-y-2 ${kindColor[obs.kind]}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-bold">
+                          {obs.kind === 'image' ? '🖼' : obs.kind === 'quote' ? '💬' : '⚡'}
+                          <input
+                            type="text"
+                            value={obs.label}
+                            onChange={(e) => handleUpdateObstacle(obs.id, { label: e.target.value })}
+                            className="bg-black/40 border border-white/20 rounded px-2 py-1 text-white w-28 focus:outline-none focus:border-violet-400 text-xs min-h-[30px]"
+                            title="Текст на наклейке"
+                          />
+                        </span>
+                        <button
+                          onClick={() => handleRemoveObstacle(obs.id)}
+                          className="text-zinc-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-950/30 transition-colors"
+                          title="Удалить"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-[10px] text-zinc-300">
+                        <div>
+                          <div className="flex justify-between mb-0.5">
+                            <span>Ширина</span>
+                            <span className="text-violet-300 font-bold">{obs.width}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="80"
+                            max="260"
+                            value={obs.width}
+                            onChange={(e) => handleUpdateObstacle(obs.id, { width: Number(e.target.value) })}
+                            className="w-full accent-violet-400 h-2 bg-zinc-800 rounded cursor-pointer"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between mb-0.5">
+                            <span>Высота</span>
+                            <span className="text-violet-300 font-bold">{obs.height}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="50"
+                            max="180"
+                            value={obs.height}
+                            onChange={(e) => handleUpdateObstacle(obs.id, { height: Number(e.target.value) })}
+                            className="w-full accent-violet-400 h-2 bg-zinc-800 rounded cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={handleResetPreset}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 text-xs text-zinc-400 hover:text-zinc-200 transition-colors font-mono border border-white/10 rounded-lg min-h-[38px]"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Пресет
+                    </button>
+                    <button
+                      onClick={handleClearObstacles}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs text-rose-400 hover:text-rose-300 transition-colors font-mono min-h-[38px]"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Очистить
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        </main>
+
+            {/* Gap Slider */}
+            <div className="pt-2 border-t border-white/10">
+              <div className="flex justify-between text-xs font-mono mb-1.5">
+                <span className="text-zinc-400">Отступ</span>
+                <span className="text-cyan-400 font-bold">{gap} px</span>
+              </div>
+              <input
+                type="range"
+                min="6"
+                max="32"
+                value={gap}
+                onChange={(e) => setGap(Number(e.target.value))}
+                className="w-full accent-cyan-400 bg-zinc-800 rounded-lg cursor-pointer h-2"
+              />
+            </div>
+
+            {/* Snippet Shortcuts */}
+            <div className="pt-2 border-t border-white/10">
+              <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-2.5 block font-mono">
+                Быстрые сниппеты
+              </label>
+              <div className="grid grid-cols-4 gap-1.5 font-mono text-[11px]">
+                <button
+                  onClick={() => handleInsertSnippet('# Заголовок')}
+                  className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
+                  title="Заголовок H1"
+                >
+                  <Heading className="w-3.5 h-3.5 text-violet-400" />
+                  <span>H1</span>
+                </button>
+                <button
+                  onClick={() => handleInsertSnippet('**Важный текст**')}
+                  className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
+                  title="Жирный"
+                >
+                  <Bold className="w-3.5 h-3.5 text-cyan-400" />
+                </button>
+                <button
+                  onClick={() => handleInsertSnippet('*Курсив*')}
+                  className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
+                  title="Курсив"
+                >
+                  <Italic className="w-3.5 h-3.5 text-pink-400" />
+                </button>
+                <button
+                  onClick={() => handleInsertSnippet('> Цитата-вынос')}
+                  className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
+                  title="Цитата"
+                >
+                  <Quote className="w-3.5 h-3.5 text-amber-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Preset Templates */}
+            <div className="pt-2 border-t border-white/10">
+              <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
+                Готовые пресеты
+              </label>
+              <div className="space-y-2">
+                {getTemplatesByType(docType).map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => handleSelectTemplate(tpl)}
+                    className="w-full text-left p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-violet-500/40 hover:bg-white/10 transition-all group min-h-[44px]"
+                  >
+                    <div className="text-sm font-semibold text-zinc-200 group-hover:text-white">
+                      {tpl.name}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-1 line-clamp-1">{tpl.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* ── Center: Editor + Preview ────────────────────────────── */}
+          <main
+            className={`${
+              mobileWorkspaceTab !== 'settings' ? 'grid' : 'hidden lg:grid'
+            } flex-1 grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden`}
+          >
+            {/* Text Editor Pane */}
+            <div
+              className={`${
+                mobileWorkspaceTab === 'editor' ? 'flex' : 'hidden'
+              } lg:flex flex-col h-full bg-[#0c0c10] min-h-[calc(100vh-7.5rem)] lg:min-h-0`}
+            >
+              <div className="px-4 sm:px-6 py-3 border-b border-white/10 flex items-center justify-between bg-zinc-950/40">
+                <span className="text-xs font-mono text-zinc-400 flex items-center gap-2">
+                  <Code className="w-3.5 h-3.5 text-violet-400" />
+                  <span>Текст документа</span>
+                </span>
+                <span className="text-[11px] text-zinc-500 font-mono">
+                  {content.length} симв. | {content.split(/\s+/).filter(Boolean).length} слов
+                </span>
+              </div>
+
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Введите текст... Он будет огибать препятствия на холсте справа."
+                className="flex-1 w-full p-4 sm:p-6 bg-transparent text-zinc-200 font-mono text-sm leading-relaxed resize-none focus:outline-none placeholder:text-zinc-700 min-h-[360px]"
+                spellCheck={false}
+              />
+            </div>
+
+            {/* Live Preview Pane */}
+            <div
+              className={`${
+                mobileWorkspaceTab === 'preview' ? 'flex' : 'hidden'
+              } lg:flex flex-col h-full bg-zinc-950/70 p-4 sm:p-5 overflow-y-auto min-h-[calc(100vh-7.5rem)] lg:min-h-0`}
+            >
+              {/* Top Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-white/10">
+                {/* Tab Selector */}
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                  <button
+                    onClick={() => setActiveTab('flow')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all min-h-[36px] ${
+                      activeTab === 'flow'
+                        ? 'bg-violet-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Pretext Flow</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('card')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all min-h-[36px] ${
+                      activeTab === 'card'
+                        ? 'bg-violet-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Formatted</span>
+                  </button>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleExportPNG}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-cyan-300 hover:bg-white/10 transition-colors min-h-[36px]"
+                    title="Экспорт Pretext-макета в PNG"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>PNG</span>
+                  </button>
+
+                  <button
+                    onClick={handleExportHTML}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-pink-300 hover:bg-white/10 transition-colors min-h-[36px]"
+                    title="Экспорт Pretext-макета в HTML"
+                  >
+                    <FileCode className="w-3.5 h-3.5" />
+                    <span>HTML</span>
+                  </button>
+
+                  <button
+                    onClick={handleCopy}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 transition-colors min-h-[36px]"
+                    title="Копировать текст"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+
+                  <button
+                    onClick={handleSaveToLocalStorage}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-xs shadow-md shadow-violet-600/30 transition-all min-h-[36px]"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savedSuccess ? 'Сохранено!' : 'Сохранить'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Renderer Stage */}
+              <div ref={containerRef} className="flex-1 flex items-start justify-center min-h-[360px]">
+                {activeTab === 'flow' ? (
+                  <div className="w-full relative border border-violet-500/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[380px] sm:min-h-[420px] overflow-hidden">
+                    {/* Info bar */}
+                    <div className="text-[11px] font-mono text-zinc-500 mb-2 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Move className="w-3 h-3 text-violet-400 shrink-0" />
+                        <span className="truncate">Тяните препятствия пальцем или мышкой</span>
+                      </span>
+                    </div>
+
+                    {/* Obstacle type legend */}
+                    <div className="flex items-center gap-3 mb-2 text-[10px] font-mono">
+                      <span className="text-violet-400 flex items-center gap-1">🖼 Медиа</span>
+                      <span className="text-cyan-400 flex items-center gap-1">💬 Цитата</span>
+                      <span className="text-amber-400 flex items-center gap-1">⚡ Бейдж</span>
+                    </div>
+
+                    <canvas
+                      ref={canvasRef}
+                      onPointerDown={handlePointerDown}
+                      onPointerMove={handlePointerMove}
+                      onPointerUp={handlePointerUp}
+                      onPointerCancel={handlePointerUp}
+                      className="block w-full cursor-grab active:cursor-grabbing touch-none select-none"
+                      style={{ height: '350px' }}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-white/10 max-w-lg shadow-2xl">
+                    <PretextRenderer content={content} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

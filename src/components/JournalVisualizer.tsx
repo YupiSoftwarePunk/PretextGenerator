@@ -52,9 +52,10 @@ export const JournalVisualizer: React.FC<JournalVisualizerProps> = ({
 
   const updateContainerWidth = useCallback(() => {
     if (containerRef.current) {
-      const w = containerRef.current.clientWidth - 48;
-      containerWidthRef.current = Math.max(300, w);
-      if (!engineRef.current || engineRef.current['config']?.containerWidth !== w) {
+      const padding = window.innerWidth < 640 ? 32 : 48;
+      const w = containerRef.current.clientWidth - padding;
+      containerWidthRef.current = Math.max(220, w);
+      if (!engineRef.current || engineRef.current['config']?.containerWidth !== containerWidthRef.current) {
         engineRef.current = new PretextEngine({
           containerWidth: containerWidthRef.current,
           fontSize: 15,

@@ -88,8 +88,9 @@ export const PlaygroundArena: React.FC = () => {
 
   const updateContainerWidth = useCallback(() => {
     if (containerRef.current) {
-      const w = containerRef.current.clientWidth - 48;
-      containerWidthRef.current = Math.max(300, w);
+      const padding = window.innerWidth < 640 ? 32 : 64;
+      const w = containerRef.current.clientWidth - padding;
+      containerWidthRef.current = Math.max(220, w);
       engineRef.current = new PretextEngine({
         containerWidth: containerWidthRef.current,
         fontSize: fontSizeRef.current,
@@ -115,11 +116,13 @@ export const PlaygroundArena: React.FC = () => {
   // Add Obstacle
   const handleAddShape = (shape: 'rect' | 'circle') => {
     const currentW = containerWidthRef.current;
+    const w = shape === 'circle' ? Math.min(120, currentW - 40) : Math.min(180, currentW - 40);
+    const h = shape === 'circle' ? w : 95;
     const newObs: Obstacle = {
-      x: Math.max(20, Math.floor(Math.random() * (currentW - 200))),
-      y: Math.max(20, Math.floor(Math.random() * 200)),
-      width: shape === 'circle' ? 120 : 180,
-      height: shape === 'circle' ? 120 : 95,
+      x: Math.max(10, Math.floor(Math.random() * Math.max(10, currentW - w - 20))),
+      y: Math.max(20, Math.floor(Math.random() * 180)),
+      width: w,
+      height: h,
       shape,
       gap,
     };
@@ -130,9 +133,12 @@ export const PlaygroundArena: React.FC = () => {
 
   // Reset Obstacles
   const handleReset = () => {
+    const currentW = containerWidthRef.current;
+    const circleW = Math.min(120, currentW - 30);
+    const rectW = Math.min(200, currentW - 30);
     const def: Obstacle[] = [
-      { x: 60, y: 40, width: 130, height: 130, shape: 'circle', gap },
-      { x: Math.max(260, containerWidthRef.current - 260), y: 110, width: 220, height: 110, shape: 'rect', gap },
+      { x: 20, y: 30, width: circleW, height: circleW, shape: 'circle', gap },
+      { x: Math.max(20, currentW - rectW - 20), y: 130, width: rectW, height: 100, shape: 'rect', gap },
     ];
     obstaclesRef.current = def;
     setObstacles(def);
@@ -386,21 +392,21 @@ export const PlaygroundArena: React.FC = () => {
   if (!isMounted) return null;
 
   return (
-    <section id="sandbox" className="w-full max-w-7xl mx-auto px-6 py-20">
+    <section id="sandbox" className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
       {/* Section Header */}
-      <div className="text-center mb-12 space-y-3">
-        <h2 className="text-4xl sm:text-5xl font-extrabold text-white">
+      <div className="text-center mb-8 sm:mb-12 space-y-2 sm:space-y-3">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
           Песочница препятствий
         </h2>
-        <p className="text-zinc-400 max-w-2xl mx-auto text-base">
+        <p className="text-zinc-400 max-w-2xl mx-auto text-sm sm:text-base">
           Управляйте геометрией макета, двигайте фигуры мышкой и настраивайте параметры потока в реальном времени.
         </p>
       </div>
 
       {/* Main Grid: Controls Panel + Interactive Arena */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         {/* Left Side: Control Controls Panel (4 Cols) */}
-        <div className="lg:col-span-4 glass-card h-full flex flex-col rounded-2xl p-6 border border-white/10 space-y-6">
+        <div className="lg:col-span-4 glass-card h-full flex flex-col rounded-2xl p-4 sm:p-6 border border-white/10 space-y-5 sm:space-y-6">
           {/* Presets Selection */}
           <div>
             <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold mb-2.5 block">
@@ -415,7 +421,7 @@ export const PlaygroundArena: React.FC = () => {
                 <button
                   key={p.id}
                   onClick={() => handleSelectPreset(p.id)}
-                  className={`py-2 px-2 rounded-lg text-xs font-medium transition-all border ${
+                  className={`py-2.5 px-2 rounded-xl text-xs font-medium transition-all border min-h-[40px] flex items-center justify-center ${
                     selectedPreset === p.id
                       ? 'bg-violet-600/40 border-violet-400 text-white shadow-[0_0_12px_rgba(139,92,246,0.3)]'
                       : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'
@@ -441,7 +447,7 @@ export const PlaygroundArena: React.FC = () => {
                 max="32"
                 value={gap}
                 onChange={(e) => setGap(Number(e.target.value))}
-                className="w-full accent-cyan-400 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
+                className="w-full accent-cyan-400 bg-zinc-800 rounded-lg cursor-pointer h-2"
               />
             </div>
 
@@ -457,13 +463,13 @@ export const PlaygroundArena: React.FC = () => {
                 max="20"
                 value={fontSize}
                 onChange={(e) => setFontSize(Number(e.target.value))}
-                className="w-full accent-violet-500 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
+                className="w-full accent-violet-500 bg-zinc-800 rounded-lg cursor-pointer h-2"
               />
             </div>
 
             {/* Line Height */}
             <div>
-              <div className="flex justify-between text-xs font-mono mb-1.5 ">
+              <div className="flex justify-between text-xs font-mono mb-1.5">
                 <span className="text-zinc-400">Высота строки</span>
                 <span className="text-pink-400 font-bold">{lineHeight} px</span>
               </div>
@@ -473,29 +479,29 @@ export const PlaygroundArena: React.FC = () => {
                 max="34"
                 value={lineHeight}
                 onChange={(e) => setLineHeight(Number(e.target.value))}
-                className="w-full accent-pink-500 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
+                className="w-full accent-pink-500 bg-zinc-800 rounded-lg cursor-pointer h-2"
               />
             </div>
           </div>
 
           {/* Obstacle Manager Buttons */}
           <div className="pt-4 border-t border-white/10 space-y-2.5">
-            <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold block flex justify-between">
+            <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold flex justify-between">
               <span>Добавить фигуры</span>
-              <span className="text-violet-400">{obstacles.length} на холсте</span>
+              <span className="text-violet-400 font-mono">{obstacles.length} на холсте</span>
             </label>
 
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => handleAddShape('circle')}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-xs font-medium text-zinc-300 hover:bg-white/10 transition-colors"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-zinc-300 hover:bg-white/10 transition-colors min-h-[42px]"
               >
                 <PlusCircle className="w-3.5 h-3.5 text-purple-400" />
                 <span>+ Сфера</span>
               </button>
               <button
                 onClick={() => handleAddShape('rect')}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-xs font-medium text-zinc-300 hover:bg-white/10 transition-colors"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-zinc-300 hover:bg-white/10 transition-colors min-h-[42px]"
               >
                 <PlusCircle className="w-3.5 h-3.5 text-cyan-400" />
                 <span>+ Карточка</span>
@@ -505,17 +511,17 @@ export const PlaygroundArena: React.FC = () => {
             <div className="flex gap-2">
               <button
                 onClick={handleReset}
-                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-zinc-400 hover:text-white transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-xs text-zinc-400 hover:text-white transition-colors min-h-[40px]"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 <span>Сброс</span>
               </button>
               {obstacles.length > 0 && (
                 <button
                   onClick={handleClear}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-rose-950/30 border border-rose-500/20 text-xs text-rose-400 hover:bg-rose-900/40 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-rose-950/30 border border-rose-500/20 text-xs text-rose-400 hover:bg-rose-900/40 transition-colors min-h-[40px]"
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-3.5 h-3.5" />
                   <span>Очистить</span>
                 </button>
               )}
@@ -523,12 +529,12 @@ export const PlaygroundArena: React.FC = () => {
           </div>
 
           {/* Mode Switch: Canvas 120 FPS vs DOM */}
-          <div className="pt-4 border-t border-white/10 flex items-center justify-between mt-auto">
+          <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 mt-auto">
             <span className="text-xs font-mono text-zinc-400">Режим рендеринга:</span>
-            <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
               <button
                 onClick={() => setRenderMode('canvas')}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all min-h-[34px] ${
                   renderMode === 'canvas'
                     ? 'bg-violet-600 text-white shadow'
                     : 'text-zinc-400 hover:text-white'
@@ -538,7 +544,7 @@ export const PlaygroundArena: React.FC = () => {
               </button>
               <button
                 onClick={() => setRenderMode('dom')}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all min-h-[34px] ${
                   renderMode === 'dom'
                     ? 'bg-violet-600 text-white shadow'
                     : 'text-zinc-400 hover:text-white'
@@ -554,7 +560,7 @@ export const PlaygroundArena: React.FC = () => {
         <div className="lg:col-span-8 flex flex-col gap-4 h-full">
           <div
             ref={containerRef}
-            className="relative w-full h-full flex flex-col border border-violet-500/30 rounded-3xl p-6 sm:p-8 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_0_50px_rgba(139,92,246,0.15)] overflow-hidden"
+            className="relative w-full h-full flex flex-col border border-violet-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_0_50px_rgba(139,92,246,0.15)] overflow-hidden"
           >
             {/* Top Arena Header & HUD */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
