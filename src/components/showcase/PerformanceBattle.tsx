@@ -168,13 +168,13 @@ export const PerformanceBattle: React.FC = () => {
   const currentPretextTime = isStressRunning ? livePretextMs : frozenMs;
 
   return (
-    <section id="benchmark" className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+    <section id="benchmark" className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20 overflow-hidden">
       {/* Section Header */}
-      <div className="text-center mb-8 sm:mb-12 space-y-2 sm:space-y-3">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+      <div className="text-center mb-8 sm:mb-12 space-y-2 sm:space-y-3 px-2">
+        <h2 className="text-2xl min-[380px]:text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight break-words hyphens-auto">
           Битва производительности
         </h2>
-        <p className="text-zinc-400 max-w-2xl mx-auto text-sm sm:text-base">
+        <p className="text-zinc-400 max-w-2xl mx-auto text-xs sm:text-base">
           Сравнение скорости расчета математического ядра Pretext против классического браузерного пересчета DOM.
         </p>
       </div>
@@ -183,10 +183,10 @@ export const PerformanceBattle: React.FC = () => {
       <div className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10 mb-8 max-w-3xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-violet-400" />
-            <span className="text-sm font-semibold text-white">Нагрузка (Объем слов):</span>
+            <Cpu className="w-4 h-4 text-violet-400 shrink-0" />
+            <span className="text-xs sm:text-sm font-semibold text-white">Нагрузка (Объем слов):</span>
           </div>
-          <span className="text-xs sm:text-sm font-mono text-cyan-400 font-bold bg-cyan-950/60 border border-cyan-500/30 px-3 py-0.5 rounded-full">
+          <span className="text-xs sm:text-sm font-mono text-cyan-400 font-bold bg-cyan-950/60 border border-cyan-500/30 px-3 py-0.5 rounded-full shrink-0">
             {wordTarget} слов
           </span>
         </div>
@@ -209,35 +209,35 @@ export const PerformanceBattle: React.FC = () => {
       </div>
 
       {/* Comparison Grid: Pretext vs Native DOM */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 w-full">
         {/* Left: Pretext Engine */}
-        <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.15)] flex flex-col justify-between">
+        <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.15)] flex flex-col justify-between w-full min-w-0">
           <div>
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-emerald-400" />
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 sm:mb-6 border-b border-white/10">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                  <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
                 </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-white">Pretext Canvas Engine</h3>
-                  <p className="text-xs text-zinc-400">Прямой геометрический обсчет</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-lg font-bold text-white truncate">Pretext Canvas Engine</h3>
+                  <p className="text-xs text-zinc-400 truncate">Прямой геометрический обсчет</p>
                 </div>
               </div>
 
-              <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-md">
+              <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-md shrink-0">
                 120 FPS
               </span>
             </div>
 
             {/* Metrics List */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 font-mono">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 font-mono">
               <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/5">
                 <span className="text-[10px] sm:text-[11px] text-zinc-400 uppercase block mb-1">Время кадра</span>
-                <span className="text-xl sm:text-2xl font-bold text-emerald-400">~{currentPretextTime.toFixed(2)} ms</span>
+                <span className="text-lg sm:text-2xl font-bold text-emerald-400">~{currentPretextTime.toFixed(2)} ms</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/5">
                 <span className="text-[10px] sm:text-[11px] text-zinc-400 uppercase block mb-1">DOM Reflows</span>
-                <span className="text-xl sm:text-2xl font-bold text-emerald-400">0</span>
+                <span className="text-lg sm:text-2xl font-bold text-emerald-400">0</span>
               </div>
             </div>
 
@@ -282,48 +282,48 @@ export const PerformanceBattle: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs font-mono text-zinc-400">
+          <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-zinc-400">
             <span>Эффективность:</span>
             <span className="text-emerald-400 font-bold">на {metrics.savings}% быстрее нативного DOM</span>
           </div>
         </div>
 
         {/* Right: Classic DOM Float / CSS Exclusions */}
-        <div className="glass-card rounded-3xl p-8 border border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.08)] flex flex-col justify-between">
+        <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.08)] flex flex-col justify-between w-full min-w-0">
           <div>
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 sm:mb-6 border-b border-white/10">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Classic DOM CSS Float</h3>
-                  <p className="text-xs text-zinc-400">Стандартные блочные перерисовки</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-lg font-bold text-white truncate">Classic DOM CSS Float</h3>
+                  <p className="text-xs text-zinc-400 truncate">Стандартные блочные перерисовки</p>
                 </div>
               </div>
 
-              <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/80 border border-rose-500/40 px-2.5 py-1 rounded-md">
+              <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/80 border border-rose-500/40 px-2.5 py-1 rounded-md shrink-0">
                 HIGH LATENCY
               </span>
             </div>
 
             {/* Metrics List */}
-            <div className="grid grid-cols-2 gap-4 mb-6 font-mono">
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <span className="text-[11px] text-zinc-400 uppercase block mb-1">Задержка макета</span>
-                <span className="text-2xl font-bold text-rose-400">~{metrics.estimatedDomTime.toFixed(1)} ms</span>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 font-mono">
+              <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/5">
+                <span className="text-[10px] sm:text-[11px] text-zinc-400 uppercase block mb-1">Задержка макета</span>
+                <span className="text-lg sm:text-2xl font-bold text-rose-400">~{metrics.estimatedDomTime.toFixed(1)} ms</span>
               </div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <span className="text-[11px] text-zinc-400 uppercase block mb-1">DOM Reflows</span>
-                <span className="text-2xl font-bold text-rose-400">~{metrics.reflows}</span>
+              <div className="bg-white/5 rounded-xl p-3 sm:p-4 border border-white/5">
+                <span className="text-[10px] sm:text-[11px] text-zinc-400 uppercase block mb-1">DOM Reflows</span>
+                <span className="text-lg sm:text-2xl font-bold text-rose-400">~{metrics.reflows}</span>
               </div>
             </div>
 
             {/* Simulated Lag Explanation Box */}
-            <div className="w-full h-[260px] rounded-xl bg-zinc-950/80 border border-white/5 p-6 flex flex-col justify-between text-xs leading-relaxed text-zinc-400">
+            <div className="w-full min-h-[220px] sm:h-[260px] rounded-xl bg-zinc-950/80 border border-white/5 p-4 sm:p-6 flex flex-col justify-between text-xs leading-relaxed text-zinc-400">
               <div className="space-y-3">
                 <div className="flex items-start gap-2.5 text-rose-300">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>Каждое смещение препятствия вызывает тяжелый пересчет CSS-боксов (Layout / Recalculate Styles).</span>
                 </div>
                 <div className="p-3 bg-rose-950/20 border border-rose-500/20 rounded-lg text-rose-200/80 font-mono text-[11px]">
@@ -337,7 +337,7 @@ export const PerformanceBattle: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs font-mono text-zinc-400">
+          <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-zinc-400">
             <span>Статус конвейера:</span>
             <span className="text-rose-400 font-semibold">Спайки и задержки в Main Thread</span>
           </div>
