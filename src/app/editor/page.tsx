@@ -401,6 +401,91 @@ function EditorContent() {
     setObstacles(newObstacles);
   };
 
+  const handleUploadImageFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const naturalW = img.naturalWidth || 200;
+        const naturalH = img.naturalHeight || 200;
+        const maxW = 200;
+        const scale = naturalW > maxW ? maxW / naturalW : 1;
+        const w = Math.round(naturalW * scale);
+        const h = Math.round(naturalH * scale);
+
+        const newObs: PretextObstacle = {
+          id: `obs_${Date.now()}`,
+          kind: 'image',
+          label: file.name.substring(0, 24),
+          x: Math.floor(Math.random() * 120) + 40,
+          y: Math.floor(Math.random() * 100) + 40,
+          width: w,
+          height: h,
+          shape: 'rect',
+          gap,
+          imageSrc: dataUrl,
+        };
+        const updated = [...obstaclesRef.current, newObs];
+        obstaclesRef.current = updated;
+        setObstacles(updated);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleReplaceImageFile = (id: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const naturalW = img.naturalWidth || 200;
+        const naturalH = img.naturalHeight || 200;
+        const maxW = 200;
+        const scale = naturalW > maxW ? maxW / naturalW : 1;
+        const w = Math.round(naturalW * scale);
+        const h = Math.round(naturalH * scale);
+
+        const updated = obstaclesRef.current.map((o) => {
+          if (o.id !== id) return o;
+          return {
+            ...o,
+            imageSrc: dataUrl,
+            label: file.name.substring(0, 24),
+            width: w,
+            height: h,
+          };
+        });
+        obstaclesRef.current = updated;
+        setObstacles(updated);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        handleUploadImageFile(file);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col font-sans">
       <Header />
@@ -465,6 +550,8 @@ function EditorContent() {
             onGapChange={setGap}
             onInsertSnippet={handleInsertSnippet}
             onSelectTemplate={handleSelectTemplate}
+            onUploadImageFile={handleUploadImageFile}
+            onReplaceImageFile={handleReplaceImageFile}
           />
 
           {/* ── Center: Editor + Preview ────────────────────────────── */}
@@ -497,6 +584,8 @@ function EditorContent() {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               content={content}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
             />
           </main>
         </div>

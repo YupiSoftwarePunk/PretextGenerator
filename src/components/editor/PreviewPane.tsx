@@ -27,6 +27,8 @@ interface PreviewPaneProps {
   onPointerMove: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onPointerUp: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   content: string;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
 }
 
 export const PreviewPane: React.FC<PreviewPaneProps> = ({
@@ -45,6 +47,8 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   onPointerMove,
   onPointerUp,
   content,
+  onDragOver,
+  onDrop,
 }) => {
   return (
     <div
@@ -55,10 +59,10 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
       {/* Top Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-white/10">
         {/* Tab Selector */}
-        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
           <button
             onClick={() => setActiveTab('flow')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all min-h-[36px] ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all min-h-[36px] ${
               activeTab === 'flow'
                 ? 'bg-violet-600 text-white shadow'
                 : 'text-zinc-400 hover:text-white'
@@ -69,7 +73,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('card')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all min-h-[36px] ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all min-h-[36px] ${
               activeTab === 'card'
                 ? 'bg-violet-600 text-white shadow'
                 : 'text-zinc-400 hover:text-white'
@@ -119,20 +123,25 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
       </div>
 
       {/* Renderer Stage */}
-      <div ref={containerRef} className="flex-1 flex items-start justify-center min-h-[360px]">
+      <div className="flex-1 flex items-start justify-center min-h-[360px]">
         {activeTab === 'flow' ? (
-          <div className="w-full relative border border-violet-500/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[380px] sm:min-h-[420px] overflow-hidden">
+          <div
+            ref={containerRef}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            className="w-full relative border border-violet-500/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[380px] sm:min-h-[420px] overflow-hidden"
+          >
             {/* Info bar */}
             <div className="text-[11px] font-mono text-zinc-500 mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Move className="w-3 h-3 text-violet-400 shrink-0" />
-                <span className="truncate">Тяните препятствия пальцем или мышкой</span>
+                <span className="truncate">Тяните препятствия или перетащите картинку (Drag-and-Drop)</span>
               </span>
             </div>
 
             {/* Obstacle type legend */}
             <div className="flex items-center gap-3 mb-2 text-[10px] font-mono">
-              <span className="text-violet-400 flex items-center gap-1">🖼 Медиа</span>
+              <span className="text-violet-400 flex items-center gap-1">🖼 Медиа / Картинка</span>
               <span className="text-cyan-400 flex items-center gap-1">💬 Цитата</span>
               <span className="text-amber-400 flex items-center gap-1">⚡ Бейдж</span>
             </div>
@@ -156,3 +165,4 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
     </div>
   );
 };
+

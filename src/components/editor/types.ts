@@ -12,4 +12,5 @@ export interface PretextObstacle {
   height: number;
   shape: 'rect' | 'circle';
   gap: number;
+  imageSrc?: string;
 }

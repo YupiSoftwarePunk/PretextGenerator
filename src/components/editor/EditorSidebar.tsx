@@ -10,6 +10,7 @@ import {
   Bold,
   Italic,
   Quote,
+  Upload,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { ObstacleKind, PretextObstacle } from './types';
@@ -28,6 +29,8 @@ interface EditorSidebarProps {
   onGapChange: (newGap: number) => void;
   onInsertSnippet: (snippet: string) => void;
   onSelectTemplate: (template: Template) => void;
+  onUploadImageFile: (file: File) => void;
+  onReplaceImageFile: (id: string, file: File) => void;
 }
 
 const kindColor: Record<ObstacleKind, string> = {
@@ -49,6 +52,8 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onGapChange,
   onInsertSnippet,
   onSelectTemplate,
+  onUploadImageFile,
+  onReplaceImageFile,
 }) => {
   return (
     <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/60 p-4 sm:p-5 flex flex-col gap-5 overflow-y-auto shrink-0 max-h-[calc(100vh-7.5rem)] lg:max-h-none">
@@ -84,34 +89,52 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <span className="text-violet-400 font-semibold">{obstacles.length}</span>
         </div>
         <p className="text-[11px] text-zinc-500 leading-relaxed">
-          Добавляйте визуальные блоки — текст документа будет огибать их в реальном времени.
+          Добавляйте визуальные блоки и картинки — текст документа будет огибать их в реальном времени.
         </p>
 
-        {/* Add buttons */}
-        <div className="grid grid-cols-3 gap-1.5">
+        {/* Add buttons & Upload button */}
+        <div className="grid grid-cols-4 gap-1.5">
+          <label
+            className="flex flex-col items-center justify-center gap-1 py-2.5 px-1.5 rounded-xl bg-violet-950/60 border border-violet-500/40 text-xs text-violet-300 hover:bg-violet-900/50 transition-colors font-mono min-h-[44px] cursor-pointer"
+            title="Загрузить картинку с ПК"
+          >
+            <Upload className="w-4 h-4 text-violet-400" />
+            <span className="text-[9px]">Файл</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  onUploadImageFile(e.target.files[0]);
+                  e.target.value = '';
+                }
+              }}
+            />
+          </label>
           <button
             onClick={() => onAddObstacle('image')}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl bg-violet-950/50 border border-violet-500/30 text-xs text-violet-300 hover:bg-violet-900/50 transition-colors font-mono min-h-[44px]"
-            title="Добавить медиа-изображение"
+            className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl bg-violet-950/40 border border-violet-500/30 text-xs text-violet-300 hover:bg-violet-900/50 transition-colors font-mono min-h-[44px]"
+            title="Добавить пустой медиа-блок"
           >
             <ImageIcon className="w-4 h-4" />
-            <span className="text-[10px]">Медиа</span>
+            <span className="text-[9px]">Медиа</span>
           </button>
           <button
             onClick={() => onAddObstacle('quote')}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl bg-cyan-950/50 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-900/50 transition-colors font-mono min-h-[44px]"
+            className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl bg-cyan-950/50 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-900/50 transition-colors font-mono min-h-[44px]"
             title="Добавить цитату-стикер"
           >
             <MessageSquare className="w-4 h-4" />
-            <span className="text-[10px]">Цитата</span>
+            <span className="text-[9px]">Цитата</span>
           </button>
           <button
             onClick={() => onAddObstacle('badge')}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl bg-amber-950/50 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-900/50 transition-colors font-mono min-h-[44px]"
+            className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl bg-amber-950/50 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-900/50 transition-colors font-mono min-h-[44px]"
             title="Добавить инфо-бейдж"
           >
             <Zap className="w-4 h-4" />
-            <span className="text-[10px]">Бейдж</span>
+            <span className="text-[9px]">Бейдж</span>
           </button>
         </div>
 
@@ -125,13 +148,13 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 font-bold">
-                    {obs.kind === 'image' ? '🖼' : obs.kind === 'quote' ? '💬' : '⚡'}
+                    {obs.kind === 'image' ? (obs.imageSrc ? '🖼📁' : '🖼') : obs.kind === 'quote' ? '💬' : '⚡'}
                     <input
                       type="text"
                       value={obs.label}
                       onChange={(e) => onUpdateObstacle(obs.id, { label: e.target.value })}
                       className="bg-black/40 border border-white/20 rounded px-2 py-1 text-white w-28 focus:outline-none focus:border-violet-400 text-xs min-h-[30px]"
-                      title="Текст на наклейке"
+                      title="Подпись препятствия"
                     />
                   </span>
                   <button
@@ -142,6 +165,32 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                     ✕
                   </button>
                 </div>
+
+                {/* Image upload / preview if image kind */}
+                {obs.kind === 'image' && (
+                  <div className="space-y-1.5 pt-1 border-t border-white/10">
+                    {obs.imageSrc && (
+                      <div className="relative rounded overflow-hidden border border-violet-500/30 bg-black/40 h-16">
+                        <img src={obs.imageSrc} alt={obs.label} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <label className="flex items-center justify-center gap-1 w-full py-1.5 px-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-200 rounded text-[10px] cursor-pointer transition-colors border border-violet-500/40 font-mono">
+                      <Upload className="w-3 h-3" />
+                      <span>{obs.imageSrc ? 'Заменить файл с ПК' : 'Выбрать картинку с ПК'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            onReplaceImageFile(obs.id, e.target.files[0]);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-[10px] text-zinc-300">
                   <div>
@@ -272,3 +321,4 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
     </aside>
   );
 };
+

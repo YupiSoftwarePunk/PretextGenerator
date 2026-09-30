@@ -2,12 +2,66 @@ import { DocumentType } from '@/types';
 import { WordLayoutItem } from '@/lib/PretextEngine';
 import { PretextObstacle } from '../types';
 
+const imageCache = new Map<string, HTMLImageElement>();
+
 export function drawObstacleOnCanvas(
   ctx: CanvasRenderingContext2D,
   obs: PretextObstacle,
   isDragging: boolean
 ) {
   ctx.save();
+
+  if (obs.kind === 'image' && obs.imageSrc) {
+    let img = imageCache.get(obs.imageSrc);
+    if (!img) {
+      img = new Image();
+      img.src = obs.imageSrc;
+      imageCache.set(obs.imageSrc, img);
+    }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 10);
+    ctx.clip();
+
+    if (img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, obs.x, obs.y, obs.width, obs.height);
+    } else {
+      ctx.fillStyle = '#27272a';
+      ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#a78bfa';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Загрузка...', obs.x + obs.width / 2, obs.y + obs.height / 2);
+    }
+    ctx.restore();
+
+    // Border & Glow
+    const borderColor = isDragging ? '#e879f9' : '#c084fc';
+    ctx.shadowColor = borderColor;
+    ctx.shadowBlur = isDragging ? 22 : 12;
+    ctx.beginPath();
+    ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 10);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = borderColor;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Label banner at bottom
+    if (obs.label) {
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(obs.x, obs.y + obs.height - 24, obs.width, 24);
+      ctx.font = '600 10px monospace';
+      ctx.fillStyle = '#fae8ff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height - 12);
+    }
+
+    ctx.restore();
+    return;
+  }
 
   if (obs.shape === 'circle') {
     const cx = obs.x + obs.width / 2;
@@ -87,6 +141,13 @@ export function buildExportHTML(
   canvasHeight: number
 ): string {
   const obstacleHtml = obstacles.map((obs) => {
+    if (obs.kind === 'image' && obs.imageSrc) {
+      return `<div style="position: absolute; left: ${obs.x}px; top: ${obs.y}px; width: ${obs.width}px; height: ${obs.height}px; background: #18181b; border: 1.5px solid #c084fc; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(192,132,252,0.3); display: flex; flex-direction: column;">
+        <img src="${obs.imageSrc}" style="width: 100%; height: calc(100% - 24px); object-fit: cover;" />
+        <div style="height: 24px; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 10px; color: #fae8ff; font-weight: bold; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${obs.label}</div>
+      </div>`;
+    }
+
     const bg = obs.shape === 'circle'
       ? 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(139,92,246,0.1) 100%)'
       : obs.kind === 'badge'
