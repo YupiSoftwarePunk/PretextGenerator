@@ -11,9 +11,10 @@ import {
   Italic,
   Quote,
   Upload,
+  Palette,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
-import { ObstacleKind, PretextObstacle } from './types';
+import { ObstacleKind, PretextObstacle, ObstacleTheme } from './types';
 import { getTemplatesByType } from '@/lib/templates';
 
 interface EditorSidebarProps {
@@ -38,6 +39,15 @@ const kindColor: Record<ObstacleKind, string> = {
   quote: 'text-cyan-400 border-cyan-500/40 bg-cyan-950/50',
   badge: 'text-amber-400 border-amber-500/40 bg-amber-950/50',
 };
+
+const THEMES: { id: ObstacleTheme; label: string; color: string }[] = [
+  { id: 'violet', label: 'Фиолетовая', color: '#c084fc' },
+  { id: 'emerald', label: 'Имрумдная', color: '#4ade80' },
+  { id: 'amber', label: 'Янтарная', color: '#f59e0b' },
+  { id: 'cyan', label: 'Неоново-синяя', color: '#22d3ee' },
+  { id: 'dark', label: 'Строгая темная', color: '#71717a' },
+  { id: 'neon', label: 'Яркая градиентная', color: '#e879f9' },
+];
 
 export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   docType,
@@ -138,6 +148,14 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           </button>
         </div>
 
+        <button
+          onClick={() => onAddObstacle('badge')}
+          className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 border border-violet-500/40 text-xs text-violet-200 hover:bg-violet-600/40 transition-all font-mono flex items-center justify-center gap-1.5 min-h-[38px] shadow-lg shadow-violet-900/20"
+        >
+          <Palette className="w-3.5 h-3.5 text-violet-400" />
+          <span>+ Создать карточку</span>
+        </button>
+
         {/* Obstacle List */}
         {obstacles.length > 0 && (
           <div className="space-y-2.5">
@@ -191,6 +209,27 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                     </label>
                   </div>
                 )}
+
+                {/* Color Theme Selector */}
+                <div className="pt-1 border-t border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                    <span>Тема / Палитра:</span>
+                    <span className="text-violet-300 capitalize">{obs.theme || 'violet'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-1">
+                    {THEMES.map((thm) => (
+                      <button
+                        key={thm.id}
+                        onClick={() => onUpdateObstacle(obs.id, { theme: thm.id })}
+                        className={`w-6 h-6 rounded-lg border transition-all flex items-center justify-center ${
+                          (obs.theme || 'violet') === thm.id ? 'scale-110 ring-2 ring-white/80 border-white' : 'opacity-70 hover:opacity-100 border-white/10'
+                        }`}
+                        style={{ backgroundColor: thm.color }}
+                        title={thm.label}
+                      />
+                    ))}
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-[10px] text-zinc-300">
                   <div>
@@ -321,4 +360,3 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
     </aside>
   );
 };
-
