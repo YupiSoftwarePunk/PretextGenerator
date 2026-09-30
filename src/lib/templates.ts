@@ -1,6 +1,124 @@
 import { Template, DocumentType } from '@/types';
 
+export const readmeTemplates: Template[] = [
+  {
+    id: 'readme-opensource',
+    name: '🌟 Open Source Проект',
+    type: 'slide',
+    description: 'Идеальный README с бэйджами, быстрым стартом и callouts',
+    content: `# ⚡ Awesome-Project
+
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com)
+
+> Высокопроизводительный движок с поддержкой 120 FPS и адаптивным обтеканием текста.
+
+## ✨ Ключевые возможности
+- 🚀 Мгновенный математический расчёт без DOM reflow
+- 🖼 Интерактивные препятствия и стикеры
+- 🎨 Кастомизация тем и стилей на лету
+- 📦 Экспорт в автономный HTML и PNG
+
+> [!NOTE]
+> Проект полностью готов к интеграции в современные React и Next.js приложения.
+
+## 📦 Быстрый старт
+\`\`\`bash
+npm install awesome-project
+npm run dev
+\`\`\``,
+  },
+  {
+    id: 'readme-saas',
+    name: '🚀 SaaS Landing & Product',
+    type: 'card',
+    description: 'Шаблон продукта с УТП, фичами и кодом подключения',
+    content: `# 🌟 CloudFlow AI Platform
+
+[![Status](https://img.shields.io/badge/status-live-success.svg)](https://example.com)
+[![Uptime](https://img.shields.io/badge/uptime-99.99%25-brightgreen.svg)](https://example.com)
+
+> Современная облачная платформа для автоматизации документооборота нового поколения.
+
+## 🚀 Почему выбирают нас
+- ⚡ Обработка данных в реальном времени
+- 🔒 Корпоративная безопасность и шифрование
+- 📊 Интерактивные дашборды и аналитика
+
+> [!NOTE]
+> Доступна бесплатная 14-дневная пробная версия без привязки банковской карты.
+
+## 💡 Подключение SDK
+\`\`\`ts
+import { CloudFlow } from '@cloudflow/sdk';
+
+const client = new CloudFlow({ apiKey: process.env.API_KEY });
+await client.sync();
+\`\`\``,
+  },
+  {
+    id: 'readme-mobile',
+    name: '📱 Mobile App README',
+    type: 'cheatsheet',
+    description: 'Документация мобильного приложения под iOS & Android',
+    content: `# 📱 Pulse Mobile Application
+
+[![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)](https://example.com)
+[![React Native](https://img.shields.io/badge/react--native-0.74-blue.svg)](https://reactnative.dev)
+
+> Кроссплатформенное мобильное приложение для мониторинга активности и аналитики.
+
+## 📲 Основные экраны
+- 📊 Интерактивный трекер показателей
+- 🔔 Умные push-уведомления
+- 🌙 Темная и светлая тема интерфейса
+
+> [!WARNING]
+> Для сборки под iOS требуется установленный Xcode 15+ и CocoaPods.
+
+## 🛠 Установка и запуск
+\`\`\`bash
+git clone https://github.com/org/pulse-app.git
+cd pulse-app && npm install
+npm run ios # или npm run android
+\`\`\``,
+  },
+  {
+    id: 'readme-api',
+    name: '🔌 REST API Reference',
+    type: 'cheatsheet',
+    description: 'Структурированная спецификация эндпоинтов и ответов сервера',
+    content: `# 🔌 Core REST API Reference
+
+[![API Version](https://img.shields.io/badge/api-v2.4-orange.svg)](https://example.com)
+[![OpenAPI](https://img.shields.io/badge/spec-OpenAPI%203.0-green.svg)](https://swagger.io)
+
+> Официальная документация по интеграции с RESTful API шлюзом.
+
+## 🔑 Аутентификация
+> [!NOTE]
+> Все запросы должны содержать заголовок Authorization: Bearer TOKEN.
+
+### GET /api/v2/documents
+Возвращает список документов с пагинацией:
+
+\`\`\`json
+{
+  "status": "success",
+  "data": [
+    { "id": "doc_101", "title": "Quarterly Report", "views": 1420 }
+  ]
+}
+\`\`\`
+
+> [!WARNING]
+> Действует лимит 100 запросов в минуту на один API ключ.`,
+  },
+];
+
 export const templates: Template[] = [
+  ...readmeTemplates,
   // СЛАЙДЫ
   {
     id: 'slide-minimal',
@@ -74,7 +192,7 @@ export async function GET(request: Request) {
 
 # Our Solution
 
-革命性ный подход к решению проблемы
+Революционный подход к решению проблемы
 
 ---
 
@@ -301,6 +419,10 @@ const value = useContext(MyContext)
 
 export function getTemplatesByType(type: DocumentType): Template[] {
   return templates.filter(t => t.type === type);
+}
+
+export function getReadmeTemplates(): Template[] {
+  return readmeTemplates;
 }
 
 export function getTemplateById(id: string): Template | undefined {

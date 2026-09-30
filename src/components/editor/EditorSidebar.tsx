@@ -12,10 +12,11 @@ import {
   Quote,
   Upload,
   Palette,
+  Sparkles,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { ObstacleKind, PretextObstacle, ObstacleTheme } from './types';
-import { getTemplatesByType } from '@/lib/templates';
+import { getTemplatesByType, getReadmeTemplates } from '@/lib/templates';
 
 interface EditorSidebarProps {
   docType: DocumentType;
@@ -65,6 +66,8 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onUploadImageFile,
   onReplaceImageFile,
 }) => {
+  const readmeTpls = getReadmeTemplates();
+
   return (
     <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-white/10 bg-zinc-950/60 p-4 sm:p-5 flex flex-col gap-5 overflow-y-auto shrink-0 max-h-[calc(100vh-7.5rem)] lg:max-h-none">
       {/* Document type */}
@@ -283,6 +286,74 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
         )}
       </div>
 
+      {/* Media Manager (Files & Images) */}
+      {obstacles.some((o) => o.kind === 'image') && (
+        <div className="pt-3 border-t border-white/10 space-y-2.5">
+          <div className="flex items-center justify-between text-xs font-mono">
+            <span className="text-zinc-300 font-bold uppercase flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5 text-violet-400" />
+              Медиа-менеджер
+            </span>
+            <span className="text-violet-400 font-semibold">
+              {obstacles.filter((o) => o.kind === 'image').length}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {obstacles
+              .filter((o) => o.kind === 'image')
+              .map((obs) => (
+                <div key={obs.id} className="p-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2.5">
+                  {obs.imageSrc ? (
+                    <img
+                      src={obs.imageSrc}
+                      alt=""
+                      className="w-10 h-10 object-cover rounded-lg border border-violet-500/30 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-violet-950/60 border border-violet-500/30 flex items-center justify-center shrink-0">
+                      <ImageIcon className="w-5 h-5 text-violet-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-mono text-zinc-200 truncate">{obs.label || 'Без названия'}</div>
+                    <div className="flex gap-1 mt-1 text-[9px] font-mono">
+                      <button
+                        onClick={() => onUpdateObstacle(obs.id, { x: 20 })}
+                        className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-violet-600/40 text-zinc-300 hover:text-white"
+                        title="Выровнять влево"
+                      >
+                        Слева
+                      </button>
+                      <button
+                        onClick={() => onUpdateObstacle(obs.id, { x: 150 })}
+                        className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-violet-600/40 text-zinc-300 hover:text-white"
+                        title="Выровнять по центру"
+                      >
+                        Центр
+                      </button>
+                      <button
+                        onClick={() => onUpdateObstacle(obs.id, { x: 280 })}
+                        className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-violet-600/40 text-zinc-300 hover:text-white"
+                        title="Выровнять вправо"
+                      >
+                        Справа
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onRemoveObstacle(obs.id)}
+                    className="text-zinc-500 hover:text-rose-400 p-1 rounded transition-colors"
+                    title="Удалить файл"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Gap Slider */}
       <div className="pt-2 border-t border-white/10">
         <div className="flex justify-between text-xs font-mono mb-1.5">
@@ -356,24 +427,48 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
         </div>
       </div>
 
-      {/* Preset Templates */}
+      {/* Professional README Templates */}
       <div className="pt-2 border-t border-white/10">
-        <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
-          Готовые пресеты
+        <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 flex items-center gap-1.5 font-mono">
+          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+          <span>README Шаблоны</span>
         </label>
         <div className="space-y-2">
-          {getTemplatesByType(docType).map((tpl) => (
+          {readmeTpls.map((tpl) => (
             <button
               key={tpl.id}
               onClick={() => onSelectTemplate(tpl)}
-              className="w-full text-left p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-violet-500/40 hover:bg-white/10 transition-all group min-h-[44px]"
+              className="w-full text-left p-3 rounded-xl bg-violet-950/20 border border-violet-500/20 hover:border-violet-500/50 hover:bg-violet-900/30 transition-all group min-h-[44px]"
             >
-              <div className="text-sm font-semibold text-zinc-200 group-hover:text-white">
+              <div className="text-sm font-semibold text-zinc-100 group-hover:text-violet-300">
                 {tpl.name}
               </div>
-              <div className="text-xs text-zinc-500 mt-1 line-clamp-1">{tpl.description}</div>
+              <div className="text-xs text-zinc-400 mt-1 line-clamp-1">{tpl.description}</div>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Preset Templates */}
+      <div className="pt-2 border-t border-white/10">
+        <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-3 block font-mono">
+          Базовые пресеты
+        </label>
+        <div className="space-y-2">
+          {getTemplatesByType(docType)
+            .filter((t) => !t.id.startsWith('readme-'))
+            .map((tpl) => (
+              <button
+                key={tpl.id}
+                onClick={() => onSelectTemplate(tpl)}
+                className="w-full text-left p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-violet-500/40 hover:bg-white/10 transition-all group min-h-[44px]"
+              >
+                <div className="text-sm font-semibold text-zinc-200 group-hover:text-white">
+                  {tpl.name}
+                </div>
+                <div className="text-xs text-zinc-500 mt-1 line-clamp-1">{tpl.description}</div>
+              </button>
+            ))}
         </div>
       </div>
     </aside>
