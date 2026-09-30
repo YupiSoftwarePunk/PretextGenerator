@@ -64,7 +64,12 @@ function EditorContent() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [gap, setGap] = useState<number>(14);
 
-  // Obstacles with kind/label
+  const [sidebarWidth, setSidebarWidth] = useState<number>(320);
+  const [editorRatio, setEditorRatio] = useState<number>(0.5);
+  const mainRef = useRef<HTMLElement>(null);
+  const isResizingSidebar = useRef(false);
+  const isResizingEditor = useRef(false);
+
   const [obstacles, setObstacles] = useState<PretextObstacle[]>(() => {
     const preset = PRESETS[initialType];
     return preset.obstacles.map((o, i) => ({ ...o, id: `obs_${Date.now()}_${i}` }));
@@ -96,14 +101,70 @@ function EditorContent() {
     return () => window.removeEventListener('resize', updateContainerWidth);
   }, [updateContainerWidth]);
 
-  // Re-measure container width when switching mobile tabs to preview
   useEffect(() => {
     if (mobileWorkspaceTab === 'preview') {
       setTimeout(updateContainerWidth, 60);
     }
   }, [mobileWorkspaceTab, updateContainerWidth]);
 
-  // ── Main 120FPS Canvas Render Loop ─────────────────────────────────────────
+  const handleSidebarResizeStart = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    isResizingSidebar.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+
+  const handleEditorResizeStart = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    isResizingEditor.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      if (isResizingSidebar.current) {
+        const newWidth = Math.max(200, Math.min(e.clientX, 600));
+        setSidebarWidth(newWidth);
+        updateContainerWidth();
+      } else if (isResizingEditor.current && mainRef.current) {
+        const rect = mainRef.current.getBoundingClientRect();
+        if (rect.width > 0) {
+          const relativeX = e.clientX - rect.left;
+          const newRatio = Math.max(0.15, Math.min(relativeX / rect.width, 0.85));
+          setEditorRatio(newRatio);
+          updateContainerWidth();
+        }
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (isResizingSidebar.current || isResizingEditor.current) {
+        isResizingSidebar.current = false;
+        isResizingEditor.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [updateContainerWidth]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => {
+      updateContainerWidth();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [updateContainerWidth]);
+
   useEffect(() => {
     if (activeTab !== 'flow') return;
 
@@ -146,7 +207,6 @@ function EditorContent() {
       const layoutItems: WordLayoutItem[] = engine.calculateWordLayout(content, activeObs, gap);
       lastLayoutRef.current = layoutItems;
 
-      // Draw text first (behind obstacles)
       ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = '#e4e4e7';
       ctx.textBaseline = 'alphabetic';
@@ -156,7 +216,6 @@ function EditorContent() {
         ctx.fillText(item.word, item.x, item.y);
       }
 
-      // Draw obstacles on top
       activeObs.forEach((obs, idx) => {
         const isDragging = isDraggingRef.current === idx;
         drawObstacleOnCanvas(ctx, obs, isDragging);
@@ -170,7 +229,6 @@ function EditorContent() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [activeTab, content, gap]);
 
-  // ── Pointer Drag on Canvas ─────────────────────────────────────────────────
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -239,7 +297,6 @@ function EditorContent() {
     }
   };
 
-  // ── Document Type Change ───────────────────────────────────────────────────
   const handleTypeChange = (newType: DocumentType) => {
     setDocType(newType);
     const preset = PRESETS[newType];
@@ -260,7 +317,6 @@ function EditorContent() {
     setContent((prev) => prev + '\n' + snippet);
   };
 
-  // ── Copy / Save ────────────────────────────────────────────────────────────
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
@@ -287,7 +343,6 @@ function EditorContent() {
     }
   };
 
-  // ── Export PNG ─────────────────────────────────────────────────────────────
   const handleExportPNG = () => {
     if (activeTab !== 'flow') {
       setActiveTab('flow');
@@ -311,7 +366,6 @@ function EditorContent() {
     }, 120);
   };
 
-  // ── Export HTML with real Pretext layout ───────────────────────────────────
   const handleExportHTML = () => {
     const currentWidth = containerWidthRef.current;
     const engine = new PretextEngine({
@@ -338,7 +392,6 @@ function EditorContent() {
     URL.revokeObjectURL(url);
   };
 
-  // ── Add / Remove Obstacles ─────────────────────────────────────────────────
   const handleAddObstacle = (kind: ObstacleKind) => {
     const shape: 'rect' | 'circle' = kind === 'image' ? 'circle' : 'rect';
     const w = kind === 'image' ? 110 : kind === 'badge' ? 150 : 170;
@@ -491,7 +544,6 @@ function EditorContent() {
       <Header />
 
       <div className="flex-1 flex flex-col pt-16 overflow-hidden">
-        {/* Mobile Workspace Tabs switcher (< lg) */}
         <div className="lg:hidden flex items-center bg-zinc-950/95 border-b border-white/10 px-3 py-2 gap-1.5 shrink-0 z-20 backdrop-blur-xl">
           <button
             onClick={() => setMobileWorkspaceTab('editor')}
@@ -536,57 +588,88 @@ function EditorContent() {
         </div>
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* ── Left Sidebar (Settings & Tools) ──────────────────────────── */}
-          <EditorSidebar
-            docType={docType}
-            onTypeChange={handleTypeChange}
-            obstacles={obstacles}
-            onAddObstacle={handleAddObstacle}
-            onRemoveObstacle={handleRemoveObstacle}
-            onUpdateObstacle={handleUpdateObstacle}
-            onClearObstacles={handleClearObstacles}
-            onResetPreset={handleResetPreset}
-            gap={gap}
-            onGapChange={setGap}
-            onInsertSnippet={handleInsertSnippet}
-            onSelectTemplate={handleSelectTemplate}
-            onUploadImageFile={handleUploadImageFile}
-            onReplaceImageFile={handleReplaceImageFile}
-          />
-
-          {/* ── Center: Editor + Preview ────────────────────────────── */}
-          <main
+          <div
+            style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
             className={`${
-              mobileWorkspaceTab !== 'settings' ? 'grid' : 'hidden lg:grid'
-            } flex-1 grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/10 overflow-hidden`}
+              mobileWorkspaceTab === 'settings' ? 'flex' : 'hidden lg:flex'
+            } w-full lg:w-[var(--sidebar-width)] shrink-0 h-full overflow-hidden flex-col`}
           >
-            {/* Text Editor Pane */}
-            <TextEditorPane
-              content={content}
-              onChange={setContent}
-              mobileVisible={mobileWorkspaceTab === 'editor'}
+            <EditorSidebar
+              docType={docType}
+              onTypeChange={handleTypeChange}
+              obstacles={obstacles}
+              onAddObstacle={handleAddObstacle}
+              onRemoveObstacle={handleRemoveObstacle}
+              onUpdateObstacle={handleUpdateObstacle}
+              onClearObstacles={handleClearObstacles}
+              onResetPreset={handleResetPreset}
+              gap={gap}
+              onGapChange={setGap}
+              onInsertSnippet={handleInsertSnippet}
+              onSelectTemplate={handleSelectTemplate}
+              onUploadImageFile={handleUploadImageFile}
+              onReplaceImageFile={handleReplaceImageFile}
             />
+          </div>
 
-            {/* Live Preview Pane */}
-            <PreviewPane
-              mobileVisible={mobileWorkspaceTab === 'preview'}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              onExportPNG={handleExportPNG}
-              onExportHTML={handleExportHTML}
-              onCopy={handleCopy}
-              copied={copied}
-              onSave={handleSaveToLocalStorage}
-              savedSuccess={savedSuccess}
-              containerRef={containerRef}
-              canvasRef={canvasRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              content={content}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            />
+          <div
+            onPointerDown={handleSidebarResizeStart}
+            className="hidden lg:flex w-1.5 hover:w-2 bg-white/10 hover:bg-violet-500/50 active:bg-violet-500 cursor-col-resize shrink-0 transition-all items-center justify-center z-20 group select-none"
+          >
+            <div className="w-0.5 h-8 bg-white/20 group-hover:bg-white/80 rounded-full transition-colors" />
+          </div>
+
+          <main
+            ref={mainRef}
+            className={`${
+              mobileWorkspaceTab !== 'settings' ? 'flex' : 'hidden lg:flex'
+            } flex-1 flex-col lg:flex-row overflow-hidden`}
+          >
+            <div
+              style={{ '--editor-width': `${editorRatio * 100}%` } as React.CSSProperties}
+              className={`${
+                mobileWorkspaceTab === 'editor' ? 'flex' : 'hidden lg:flex'
+              } w-full lg:w-[var(--editor-width)] h-full overflow-hidden flex-col`}
+            >
+              <TextEditorPane
+                content={content}
+                onChange={setContent}
+                mobileVisible={mobileWorkspaceTab === 'editor'}
+              />
+            </div>
+
+            <div
+              onPointerDown={handleEditorResizeStart}
+              className="hidden lg:flex w-1.5 hover:w-2 bg-white/10 hover:bg-pink-500/50 active:bg-pink-500 cursor-col-resize shrink-0 transition-all items-center justify-center z-20 group select-none"
+            >
+              <div className="w-0.5 h-8 bg-white/20 group-hover:bg-white/80 rounded-full transition-colors" />
+            </div>
+
+            <div
+              className={`${
+                mobileWorkspaceTab === 'preview' ? 'flex' : 'hidden lg:flex'
+              } flex-1 h-full overflow-hidden flex-col`}
+            >
+              <PreviewPane
+                mobileVisible={mobileWorkspaceTab === 'preview'}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                onExportPNG={handleExportPNG}
+                onExportHTML={handleExportHTML}
+                onCopy={handleCopy}
+                copied={copied}
+                onSave={handleSaveToLocalStorage}
+                savedSuccess={savedSuccess}
+                containerRef={containerRef}
+                canvasRef={canvasRef}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                content={content}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              />
+            </div>
           </main>
         </div>
       </div>
