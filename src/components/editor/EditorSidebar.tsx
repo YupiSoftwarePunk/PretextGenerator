@@ -302,37 +302,56 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
       {/* Snippet Shortcuts */}
       <div className="pt-2 border-t border-white/10">
         <label className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-2.5 block font-mono">
-          Быстрые сниппеты
+          README Сниппеты
         </label>
-        <div className="grid grid-cols-4 gap-1.5 font-mono text-[11px]">
+        <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
           <button
-            onClick={() => onInsertSnippet('# Заголовок')}
-            className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
-            title="Заголовок H1"
+            onClick={() => onInsertSnippet('# Заголовок H1')}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1.5 border border-white/5 min-h-[38px]"
           >
-            <Heading className="w-3.5 h-3.5 text-violet-400" />
-            <span>H1</span>
+            <span>📄 Заголовок H1</span>
           </button>
           <button
-            onClick={() => onInsertSnippet('**Важный текст**')}
-            className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
-            title="Жирный"
+            onClick={() => onInsertSnippet('- Маркированный пункт списка')}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1.5 border border-white/5 min-h-[38px]"
           >
-            <Bold className="w-3.5 h-3.5 text-cyan-400" />
+            <span>📋 Список</span>
           </button>
           <button
-            onClick={() => onInsertSnippet('*Курсив*')}
-            className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
-            title="Курсив"
+            onClick={() => onInsertSnippet('1. Нумерованный пункт')}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1.5 border border-white/5 min-h-[38px]"
           >
-            <Italic className="w-3.5 h-3.5 text-pink-400" />
+            <span>🔢 Нумерация</span>
           </button>
           <button
-            onClick={() => onInsertSnippet('> Цитата-вынос')}
-            className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1 border border-white/5 min-h-[40px]"
-            title="Цитата"
+            onClick={() => onInsertSnippet('```ts\nconst pretext = "120 FPS";\n```')}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 flex items-center justify-center gap-1.5 border border-white/5 min-h-[38px]"
           >
-            <Quote className="w-3.5 h-3.5 text-amber-400" />
+            <span>💻 Блок кода</span>
+          </button>
+          <button
+            onClick={() => onInsertSnippet('> [!NOTE]\n> Важная информация по архитектуре проекта.')}
+            className="p-2 rounded-lg bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300 flex items-center justify-center gap-1.5 border border-cyan-500/30 min-h-[38px]"
+          >
+            <span>📝 Callout Note</span>
+          </button>
+          <button
+            onClick={() => onInsertSnippet('> [!WARNING]\n> Требует внимания разработчика.')}
+            className="p-2 rounded-lg bg-amber-950/30 hover:bg-amber-900/40 text-amber-300 flex items-center justify-center gap-1.5 border border-amber-500/30 min-h-[38px]"
+          >
+            <span>⚠️ Callout Warn</span>
+          </button>
+          <button
+            onClick={() => onInsertSnippet('[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)')}
+            className="p-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-300 flex items-center justify-center gap-1.5 border border-emerald-500/30 min-h-[38px]"
+          >
+            <span>🛡️ Tech Badge</span>
+          </button>
+          <button
+            onClick={() => onInsertSnippet('**Жирный** и *курсив* текст')}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-pink-300 flex items-center justify-center gap-1.5 border border-white/5 min-h-[38px]"
+          >
+            <span>✨ Акцент</span>
           </button>
         </div>
       </div>

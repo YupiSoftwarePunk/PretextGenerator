@@ -32,11 +32,20 @@ function getExportStyles(): React.CSSProperties {
   };
 }
 
-// Парсер Pretext разметки в HTML
+// Парсер Pretext разметки в HTML с поддержкой полного набора README элементов
 function renderPretext(content: string, exportMode: boolean): string {
   if (!content) return '';
 
   let html = content;
+
+  // Callouts: > [!NOTE] text and > [!WARNING] text
+  if (exportMode) {
+    html = html.replace(/^> \[!NOTE\]\s*(.+)$/gm, '<div style="background: rgba(6,182,212,0.15); border-left: 4px solid #22d3ee; padding: 12px 16px; border-radius: 8px; margin: 12px 0; color: #ecfeff; font-family: monospace; font-size: 13px;"><strong style="color: #22d3ee; display: block; margin-bottom: 4px;">📝 NOTE:</strong>$1</div>');
+    html = html.replace(/^> \[!WARNING\]\s*(.+)$/gm, '<div style="background: rgba(245,158,11,0.15); border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin: 12px 0; color: #fef3c7; font-family: monospace; font-size: 13px;"><strong style="color: #f59e0b; display: block; margin-bottom: 4px;">⚠️ WARNING:</strong>$1</div>');
+  } else {
+    html = html.replace(/^> \[!NOTE\]\s*(.+)$/gm, '<div class="bg-cyan-950/40 border-l-4 border-cyan-400 p-3 rounded-lg my-3 text-cyan-100 font-mono text-xs"><strong class="text-cyan-400 block mb-1">📝 NOTE:</strong>$1</div>');
+    html = html.replace(/^> \[!WARNING\]\s*(.+)$/gm, '<div class="bg-amber-950/40 border-l-4 border-amber-400 p-3 rounded-lg my-3 text-amber-100 font-mono text-xs"><strong class="text-amber-400 block mb-1">⚠️ WARNING:</strong>$1</div>');
+  }
 
   // Заголовки
   if (exportMode) {
@@ -45,24 +54,30 @@ function renderPretext(content: string, exportMode: boolean): string {
     html = html.replace(/^### (.+)$/gm, '<h3 style="font-size: 1.25rem; font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">$1</h3>');
   } else {
     html = html.replace(/^# (.+)$/gm, '<h1 class="text-3xl font-bold text-white mb-4">$1</h1>');
+    html = html.replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold text-white mb-3">$2</h2>'); // fixed group index
     html = html.replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold text-white mb-3">$1</h2>');
     html = html.replace(/^### (.+)$/gm, '<h3 class="text-xl font-semibold text-white mb-2">$1</h3>');
   }
 
-  // Цитаты
+  // Обычные цитаты
   if (exportMode) {
     html = html.replace(/^> (.+)$/gm, '<blockquote style="border-left: 4px solid #8b5cf6; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: #d4d4d8; font-style: italic; margin: 1rem 0;">$1</blockquote>');
   } else {
     html = html.replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-violet-500 pl-4 py-2 text-zinc-300 italic my-4">$1</blockquote>');
   }
 
-  // Списки
+  // Маркированные списки
   if (exportMode) {
     html = html.replace(/^- (.+)$/gm, '<li style="color: #d4d4d8; margin-left: 1.5rem; list-style-type: disc;">$1</li>');
-    html = html.replace(/(<li[\s\S]*?<\/li>)/g, '<ul style="margin: 1rem 0;">$1</ul>');
   } else {
     html = html.replace(/^- (.+)$/gm, '<li class="text-zinc-300 ml-6 list-disc">$1</li>');
-    html = html.replace(/(<li[\s\S]*?<\/li>)/g, '<ul class="space-y-2 my-4">$1</ul>');
+  }
+
+  // Нумерованные списки
+  if (exportMode) {
+    html = html.replace(/^\d+\. (.+)$/gm, '<li style="color: #d4d4d8; margin-left: 1.5rem; list-style-type: decimal;">$1</li>');
+  } else {
+    html = html.replace(/^\d+\. (.+)$/gm, '<li class="text-zinc-300 ml-6 list-decimal">$1</li>');
   }
 
   // Жирный текст
@@ -97,6 +112,10 @@ function renderPretext(content: string, exportMode: boolean): string {
     });
   }
 
+  // Бейджи (Shields.io style markdown images: [![badge](url)](link) or ![](url))
+  html = html.replace(/\[!\[([^\]]*?)\]\(([^)]+)\)\]\(([^)]+)\)/g, '<a href="$3" target="_blank" rel="noreferrer" style="display: inline-block; margin-right: 6px; margin-bottom: 6px;"><img src="$2" alt="$1" style="height: 20px; vertical-align: middle;" /></a>');
+  html = html.replace(/!\[([^\]]*?)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; border-radius: 6px; margin: 8px 0;" />');
+
   // Горизонтальная линия
   if (exportMode) {
     html = html.replace(/^---$/gm, '<hr style="border: none; border-top: 2px solid rgba(255,255,255,0.1); margin: 2rem 0;" />');
@@ -106,9 +125,9 @@ function renderPretext(content: string, exportMode: boolean): string {
 
   // Параграфы
   if (exportMode) {
-    html = html.replace(/^(?!<[h|u|l|b|p|c]|---|>)(.+)$/gm, '<p style="color: #d4d4d8; line-height: 1.625; margin: 0.75rem 0;">$1</p>');
+    html = html.replace(/^(?!<[h|u|l|b|p|c|t|d]|---|>)(.+)$/gm, '<p style="color: #d4d4d8; line-height: 1.625; margin: 0.75rem 0;">$1</p>');
   } else {
-    html = html.replace(/^(?!<[h|u|l|b|p|c]|---|>)(.+)$/gm, '<p class="text-zinc-300 leading-relaxed my-3">$1</p>');
+    html = html.replace(/^(?!<[h|u|l|b|p|c|t|d]|---|>)(.+)$/gm, '<p class="text-zinc-300 leading-relaxed my-3">$1</p>');
   }
 
   return html;
