@@ -10,8 +10,9 @@ import { PretextObstacle, ObstacleKind } from '../../components/editor/types';
 import { PRESETS } from '../../components/editor/constants';
 import { drawObstacleOnCanvas, buildExportHTML } from '../../components/editor/utils/canvasUtils';
 import { EditorSidebar } from '../../components/editor/EditorSidebar';
-import { TextEditorPane } from '../../components/editor/TextEditorPane';
-import { PreviewPane } from '../../components/editor/PreviewPane';
+import { TextEditorPane } from '@/components/editor/TextEditorPane';
+import { PreviewPane } from '@/components/editor/PreviewPane';
+import jsPDF from 'jspdf';
 
 function EditorContent() {
   const searchParams = useSearchParams();
@@ -66,6 +67,7 @@ function EditorContent() {
 
   const [sidebarWidth, setSidebarWidth] = useState<number>(320);
   const [editorRatio, setEditorRatio] = useState<number>(0.5);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const isResizingSidebar = useRef(false);
   const isResizingEditor = useRef(false);
@@ -77,6 +79,7 @@ function EditorContent() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const cardContainerRef = useRef<HTMLDivElement>(null);
   const obstaclesRef = useRef<PretextObstacle[]>(obstacles);
   const isDraggingRef = useRef<number | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -123,10 +126,14 @@ function EditorContent() {
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
-      if (isResizingSidebar.current) {
-        const newWidth = Math.max(200, Math.min(e.clientX, 600));
-        setSidebarWidth(newWidth);
-        updateContainerWidth();
+      if (isResizingSidebar.current && workspaceRef.current) {
+        const rect = workspaceRef.current.getBoundingClientRect();
+        if (rect.width > 0) {
+          const relativeX = e.clientX - rect.left;
+          const newWidth = Math.max(200, Math.min(relativeX, 600));
+          setSidebarWidth(newWidth);
+          updateContainerWidth();
+        }
       } else if (isResizingEditor.current && mainRef.current) {
         const rect = mainRef.current.getBoundingClientRect();
         if (rect.width > 0) {
@@ -393,32 +400,33 @@ function EditorContent() {
   };
 
   const handleExportPDF = () => {
-    const currentWidth = containerWidthRef.current;
-    const engine = new PretextEngine({
-      containerWidth: currentWidth,
-      fontSize: 15,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      lineHeight: 26,
-    });
-    const layoutItems = engine.calculateWordLayout(content, obstaclesRef.current, gap);
-    const htmlContent = buildExportHTML(
-      docType,
-      content,
-      layoutItems,
-      obstaclesRef.current,
-      currentWidth,
-      400
-    );
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 400);
+    if (activeTab !== 'flow') {
+      setActiveTab('flow');
     }
+    setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        alert('Холст не найден. Переключитесь на вкладку Pretext Flow для экспорта.');
+        return;
+      }
+      try {
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+
+        const pdf = new jsPDF({
+          orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [imgWidth, imgHeight],
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`pretext_${docType}_${Date.now()}.pdf`);
+      } catch (e) {
+        console.error('Export PDF failed:', e);
+        alert('Ошибка экспорта в PDF: ' + e);
+      }
+    }, 120);
   };
 
   const handleAddObstacle = (kind: ObstacleKind) => {
@@ -616,7 +624,7 @@ function EditorContent() {
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        <div ref={workspaceRef} className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           <div
             style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
             className={`${
@@ -691,6 +699,7 @@ function EditorContent() {
                 onSave={handleSaveToLocalStorage}
                 savedSuccess={savedSuccess}
                 containerRef={containerRef}
+                cardContainerRef={cardContainerRef}
                 canvasRef={canvasRef}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}

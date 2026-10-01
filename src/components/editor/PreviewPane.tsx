@@ -23,6 +23,7 @@ interface PreviewPaneProps {
   onSave: () => void;
   savedSuccess: boolean;
   containerRef: RefObject<HTMLDivElement | null>;
+  cardContainerRef: RefObject<HTMLDivElement | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   onPointerDown: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onPointerMove: (e: React.PointerEvent<HTMLCanvasElement>) => void;
@@ -44,6 +45,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   onSave,
   savedSuccess,
   containerRef,
+  cardContainerRef,
   canvasRef,
   onPointerDown,
   onPointerMove,
@@ -135,43 +137,48 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
 
       {/* Renderer Stage */}
       <div className="flex-1 flex items-start justify-center min-h-[360px]">
-        {activeTab === 'flow' ? (
-          <div
-            ref={containerRef}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            className="w-full relative border border-violet-500/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[380px] sm:min-h-[420px] overflow-hidden"
-          >
-            {/* Info bar */}
-            <div className="text-[11px] font-mono text-zinc-500 mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Move className="w-3 h-3 text-violet-400 shrink-0" />
-                <span className="truncate">Тяните препятствия или перетащите картинку (Drag-and-Drop)</span>
-              </span>
-            </div>
-
-            {/* Obstacle type legend */}
-            <div className="flex items-center gap-3 mb-2 text-[10px] font-mono">
-              <span className="text-violet-400 flex items-center gap-1">🖼 Медиа / Картинка</span>
-              <span className="text-cyan-400 flex items-center gap-1">💬 Цитата</span>
-              <span className="text-amber-400 flex items-center gap-1">⚡ Бейдж</span>
-            </div>
-
-            <canvas
-              ref={canvasRef}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              className="block w-full cursor-grab active:cursor-grabbing touch-none select-none"
-              style={{ height: '350px' }}
-            />
+        <div
+          ref={containerRef}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          className={`${
+            activeTab === 'flow' ? 'flex' : 'hidden'
+          } flex-col w-full relative border border-violet-500/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 bg-zinc-900/50 backdrop-blur-md shadow-2xl min-h-[380px] sm:min-h-[420px] overflow-hidden`}
+        >
+          {/* Info bar */}
+          <div className="text-[11px] font-mono text-zinc-500 mb-2 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Move className="w-3 h-3 text-violet-400 shrink-0" />
+              <span className="truncate">Тяните препятствия или перетащите картинку (Drag-and-Drop)</span>
+            </span>
           </div>
-        ) : (
-          <div className="w-full glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-white/10 max-w-lg shadow-2xl">
-            <PretextRenderer content={content} />
+
+          {/* Obstacle type legend */}
+          <div className="flex items-center gap-3 mb-2 text-[10px] font-mono">
+            <span className="text-violet-400 flex items-center gap-1">🖼 Медиа / Картинка</span>
+            <span className="text-cyan-400 flex items-center gap-1">💬 Цитата</span>
+            <span className="text-amber-400 flex items-center gap-1">⚡ Бейдж</span>
           </div>
-        )}
+
+          <canvas
+            ref={canvasRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            className="block w-full cursor-grab active:cursor-grabbing touch-none select-none"
+            style={{ height: '350px' }}
+          />
+        </div>
+
+        <div
+          ref={cardContainerRef}
+          className={`${
+            activeTab === 'card' ? 'flex' : 'hidden'
+          } w-full glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-white/10 max-w-lg shadow-2xl flex-col`}
+        >
+          <PretextRenderer content={content} />
+        </div>
       </div>
     </div>
   );
