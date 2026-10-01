@@ -29,10 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ showAnchorLinks = false }) => {
   const isEditor = pathname.startsWith('/editor');
   const isGallery = pathname.startsWith('/gallery');
 
-  // Close mobile menu on route change or resize to desktop
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+
 
   useEffect(() => {
     const handleResize = () => {
@@ -189,38 +186,38 @@ export const Header: React.FC<HeaderProps> = ({ showAnchorLinks = false }) => {
             <span className="text-[11px] text-zinc-500 uppercase tracking-wider px-3.5 font-semibold block mb-1">
               Разделы витрины
             </span>
-            <a
+            <Link
               href="/#sandbox"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl min-h-[40px] text-zinc-400 hover:text-cyan-300 hover:bg-white/5 transition-colors"
             >
               <Sliders className="w-3.5 h-3.5 text-cyan-400" />
               <span>Песочница</span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#magazine"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl min-h-[40px] text-zinc-400 hover:text-violet-300 hover:bg-white/5 transition-colors"
             >
               <BookOpen className="w-3.5 h-3.5 text-violet-400" />
               <span>Журнал</span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#benchmark"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl min-h-[40px] text-zinc-400 hover:text-emerald-300 hover:bg-white/5 transition-colors"
             >
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
               <span>Бенчмарк</span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#formats"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl min-h-[40px] text-zinc-400 hover:text-pink-300 hover:bg-white/5 transition-colors"
             >
               <FileBox className="w-3.5 h-3.5 text-pink-400" />
               <span>Форматы</span>
-            </a>
+            </Link>
           </div>
 
           {/* Action CTAs */}
