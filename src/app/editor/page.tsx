@@ -393,7 +393,32 @@ function EditorContent() {
   };
 
   const handleExportPDF = () => {
-    window.print();
+    const currentWidth = containerWidthRef.current;
+    const engine = new PretextEngine({
+      containerWidth: currentWidth,
+      fontSize: 15,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      lineHeight: 26,
+    });
+    const layoutItems = engine.calculateWordLayout(content, obstaclesRef.current, gap);
+    const htmlContent = buildExportHTML(
+      docType,
+      content,
+      layoutItems,
+      obstaclesRef.current,
+      currentWidth,
+      400
+    );
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 400);
+    }
   };
 
   const handleAddObstacle = (kind: ObstacleKind) => {
