@@ -3,10 +3,10 @@ import { Template, DocumentType } from '@/types';
 export const readmeTemplates: Template[] = [
   {
     id: 'readme-opensource',
-    name: '🌟 Open Source Проект',
+    name: 'Open Source Проект',
     type: 'slide',
     description: 'Идеальный README с бэйджами, быстрым стартом и callouts',
-    content: `# ⚡ Awesome-Project
+    content: `# Awesome-Project
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com)
@@ -14,16 +14,16 @@ export const readmeTemplates: Template[] = [
 
 > Высокопроизводительный движок с поддержкой 120 FPS и адаптивным обтеканием текста.
 
-## ✨ Ключевые возможности
-- 🚀 Мгновенный математический расчёт без DOM reflow
-- 🖼 Интерактивные препятствия и стикеры
-- 🎨 Кастомизация тем и стилей на лету
-- 📦 Экспорт в автономный HTML и PNG
+## Ключевые возможности
+- Мгновенный математический расчёт без DOM reflow
+- Интерактивные препятствия и стикеры
+- Кастомизация тем и стилей на лету
+- Экспорт в автономный HTML и PNG
 
 > [!NOTE]
 > Проект полностью готов к интеграции в современные React и Next.js приложения.
 
-## 📦 Быстрый старт
+## Быстрый старт
 \`\`\`bash
 npm install awesome-project
 npm run dev
@@ -31,25 +31,25 @@ npm run dev
   },
   {
     id: 'readme-saas',
-    name: '🚀 SaaS Landing & Product',
+    name: 'SaaS Landing & Product',
     type: 'card',
     description: 'Шаблон продукта с УТП, фичами и кодом подключения',
-    content: `# 🌟 CloudFlow AI Platform
+    content: `# CloudFlow AI Platform
 
 [![Status](https://img.shields.io/badge/status-live-success.svg)](https://example.com)
 [![Uptime](https://img.shields.io/badge/uptime-99.99%25-brightgreen.svg)](https://example.com)
 
 > Современная облачная платформа для автоматизации документооборота нового поколения.
 
-## 🚀 Почему выбирают нас
-- ⚡ Обработка данных в реальном времени
-- 🔒 Корпоративная безопасность и шифрование
-- 📊 Интерактивные дашборды и аналитика
+## Почему выбирают нас
+- Обработка данных в реальном времени
+- Корпоративная безопасность и шифрование
+- Интерактивные дашборды и аналитика
 
 > [!NOTE]
 > Доступна бесплатная 14-дневная пробная версия без привязки банковской карты.
 
-## 💡 Подключение SDK
+## Подключение SDK
 \`\`\`ts
 import { CloudFlow } from '@cloudflow/sdk';
 
@@ -59,25 +59,25 @@ await client.sync();
   },
   {
     id: 'readme-mobile',
-    name: '📱 Mobile App README',
+    name: 'Mobile App README',
     type: 'cheatsheet',
     description: 'Документация мобильного приложения под iOS & Android',
-    content: `# 📱 Pulse Mobile Application
+    content: `# Pulse Mobile Application
 
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)](https://example.com)
 [![React Native](https://img.shields.io/badge/react--native-0.74-blue.svg)](https://reactnative.dev)
 
 > Кроссплатформенное мобильное приложение для мониторинга активности и аналитики.
 
-## 📲 Основные экраны
-- 📊 Интерактивный трекер показателей
-- 🔔 Умные push-уведомления
-- 🌙 Темная и светлая тема интерфейса
+## Основные экраны
+- Интерактивный трекер показателей
+- Умные push-уведомления
+- Темная и светлая тема интерфейса
 
 > [!WARNING]
 > Для сборки под iOS требуется установленный Xcode 15+ и CocoaPods.
 
-## 🛠 Установка и запуск
+## Установка и запуск
 \`\`\`bash
 git clone https://github.com/org/pulse-app.git
 cd pulse-app && npm install
@@ -86,17 +86,17 @@ npm run ios # или npm run android
   },
   {
     id: 'readme-api',
-    name: '🔌 REST API Reference',
+    name: 'REST API Reference',
     type: 'cheatsheet',
     description: 'Структурированная спецификация эндпоинтов и ответов сервера',
-    content: `# 🔌 Core REST API Reference
+    content: `# Core REST API Reference
 
 [![API Version](https://img.shields.io/badge/api-v2.4-orange.svg)](https://example.com)
 [![OpenAPI](https://img.shields.io/badge/spec-OpenAPI%203.0-green.svg)](https://swagger.io)
 
 > Официальная документация по интеграции с RESTful API шлюзом.
 
-## 🔑 Аутентификация
+## Аутентификация
 > [!NOTE]
 > Все запросы должны содержать заголовок Authorization: Bearer TOKEN.
 

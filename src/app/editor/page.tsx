@@ -392,6 +392,10 @@ function EditorContent() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   const handleAddObstacle = (kind: ObstacleKind) => {
     const shape: 'rect' | 'circle' = kind === 'image' ? 'circle' : 'rect';
     const w = kind === 'image' ? 110 : kind === 'badge' ? 150 : 170;
@@ -656,6 +660,7 @@ function EditorContent() {
                 setActiveTab={setActiveTab}
                 onExportPNG={handleExportPNG}
                 onExportHTML={handleExportHTML}
+                onExportPDF={handleExportPDF}
                 onCopy={handleCopy}
                 copied={copied}
                 onSave={handleSaveToLocalStorage}

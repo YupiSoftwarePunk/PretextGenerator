@@ -17,6 +17,7 @@ interface PreviewPaneProps {
   setActiveTab: (tab: 'flow' | 'card') => void;
   onExportPNG: () => void;
   onExportHTML: () => void;
+  onExportPDF: () => void;
   onCopy: () => void;
   copied: boolean;
   onSave: () => void;
@@ -37,6 +38,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   setActiveTab,
   onExportPNG,
   onExportHTML,
+  onExportPDF,
   onCopy,
   copied,
   onSave,
@@ -102,6 +104,15 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           >
             <FileCode className="w-3.5 h-3.5" />
             <span>HTML</span>
+          </button>
+
+          <button
+            onClick={onExportPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-emerald-300 hover:bg-white/10 transition-colors min-h-[36px]"
+            title="Экспорт в PDF (печать / сохранение в PDF)"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>PDF</span>
           </button>
 
           <button

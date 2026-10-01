@@ -54,7 +54,6 @@ function renderPretext(content: string, exportMode: boolean): string {
     html = html.replace(/^### (.+)$/gm, '<h3 style="font-size: 1.25rem; font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">$1</h3>');
   } else {
     html = html.replace(/^# (.+)$/gm, '<h1 class="text-3xl font-bold text-white mb-4">$1</h1>');
-    html = html.replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold text-white mb-3">$2</h2>'); // fixed group index
     html = html.replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold text-white mb-3">$1</h2>');
     html = html.replace(/^### (.+)$/gm, '<h3 class="text-xl font-semibold text-white mb-2">$1</h3>');
   }
