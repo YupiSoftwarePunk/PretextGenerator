@@ -8,7 +8,11 @@ import {
   Check,
   Save,
   Move,
+  RotateCw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import { DocumentType } from '@/types';
 import PretextRenderer from '@/components/pretext/PretextRenderer';
 
 interface PreviewPaneProps {
@@ -31,6 +35,12 @@ interface PreviewPaneProps {
   content: string;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
+  docType?: DocumentType;
+  cardSide?: 'front' | 'back';
+  onToggleCardSide?: () => void;
+  activeSlideIndex?: number;
+  slidesCount?: number;
+  onSlideChange?: (index: number) => void;
 }
 
 export const PreviewPane: React.FC<PreviewPaneProps> = ({
@@ -53,6 +63,12 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   content,
   onDragOver,
   onDrop,
+  docType,
+  cardSide,
+  onToggleCardSide,
+  activeSlideIndex,
+  slidesCount,
+  onSlideChange,
 }) => {
   return (
     <div
@@ -134,6 +150,50 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Contextual Card Flip / Slide Bar */}
+      {docType === 'card' && onToggleCardSide && (
+        <div className="mb-3 p-2 rounded-xl bg-violet-950/40 border border-violet-500/30 flex items-center justify-between">
+          <span className="text-xs font-mono text-violet-300 flex items-center gap-1.5">
+            <span>Карточка:</span>
+            <span className="font-bold text-white uppercase">{cardSide === 'front' ? 'Лицевая сторона' : 'Обратная сторона'}</span>
+          </span>
+          <button
+            onClick={onToggleCardSide}
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-mono font-semibold transition-all shadow-md shadow-violet-600/20 active:scale-95"
+            title="Перевернуть карточку"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+            <span>Перевернуть карточку</span>
+          </button>
+        </div>
+      )}
+
+      {docType === 'slide' && (slidesCount || 1) > 1 && onSlideChange && (
+        <div className="mb-3 p-2 rounded-xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
+          <span className="text-xs font-mono text-cyan-300">
+            Слайд <span className="font-bold text-white">{(activeSlideIndex || 0) + 1}</span> из <span className="font-bold text-white">{slidesCount}</span>
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onSlideChange((activeSlideIndex || 0) - 1)}
+              disabled={(activeSlideIndex || 0) === 0}
+              className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 disabled:opacity-40 transition-colors"
+              title="Предыдущий слайд"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onSlideChange((activeSlideIndex || 0) + 1)}
+              disabled={(activeSlideIndex || 0) >= (slidesCount || 1) - 1}
+              className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 disabled:opacity-40 transition-colors"
+              title="Следующий слайд"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Renderer Stage */}
       <div className="flex-1 flex items-start justify-center min-h-[360px]">

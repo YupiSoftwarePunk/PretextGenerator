@@ -65,6 +65,25 @@ function EditorContent() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [gap, setGap] = useState<number>(14);
 
+  const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
+  const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+
+  // Derived content for two-sided cards & multi-slides
+  const cardParts = content.split('=== BACK ===');
+  const frontText = (cardParts[0] || '').trim();
+  const backText = (cardParts[1] || '').trim();
+  const currentCardContent = cardSide === 'front' ? frontText : backText;
+
+  const slides = content.split(/\n---\s*\n/);
+  const currentSlideText = slides[activeSlideIndex] || slides[0] || content;
+
+  const activeRenderText =
+    docType === 'card'
+      ? currentCardContent
+      : docType === 'slide'
+      ? currentSlideText
+      : content;
+
   const [sidebarWidth, setSidebarWidth] = useState<number>(320);
   const [editorRatio, setEditorRatio] = useState<number>(0.5);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -211,7 +230,7 @@ function EditorContent() {
         lineHeight: 26,
       });
 
-      const layoutItems: WordLayoutItem[] = engine.calculateWordLayout(content, activeObs, gap);
+      const layoutItems: WordLayoutItem[] = engine.calculateWordLayout(activeRenderText, activeObs, gap);
       lastLayoutRef.current = layoutItems;
 
       ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -234,7 +253,7 @@ function EditorContent() {
 
     animationFrameId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [activeTab, content, gap]);
+  }, [activeTab, activeRenderText, gap]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -306,6 +325,8 @@ function EditorContent() {
 
   const handleTypeChange = (newType: DocumentType) => {
     setDocType(newType);
+    setCardSide('front');
+    setActiveSlideIndex(0);
     const preset = PRESETS[newType];
     setContent(preset.text);
     const newObstacles = preset.obstacles.map((o, i) => ({
@@ -316,8 +337,40 @@ function EditorContent() {
     setObstacles(newObstacles);
   };
 
+  const handleEditorChange = (newText: string) => {
+    if (docType === 'card') {
+      if (cardSide === 'front') {
+        setContent(`${newText}\n=== BACK ===\n${backText}`);
+      } else {
+        setContent(`${frontText}\n=== BACK ===\n${newText}`);
+      }
+    } else if (docType === 'slide') {
+      const updated = [...slides];
+      updated[activeSlideIndex] = newText;
+      setContent(updated.join('\n---\n'));
+    } else {
+      setContent(newText);
+    }
+  };
+
+  const handleCardSideToggle = () => {
+    setCardSide((prev) => (prev === 'front' ? 'back' : 'front'));
+  };
+
+  const handleSlideChange = (index: number) => {
+    setActiveSlideIndex(Math.max(0, Math.min(index, slides.length - 1)));
+  };
+
+  const handleAddSlide = () => {
+    const newContent = content + '\n---\n# Новый слайд\nТекст следующего слайда...';
+    setContent(newContent);
+    setActiveSlideIndex(slides.length);
+  };
+
   const handleSelectTemplate = (template: Template) => {
     setContent(template.content);
+    setCardSide('front');
+    setActiveSlideIndex(0);
   };
 
   const handleInsertSnippet = (snippet: string) => {
@@ -325,7 +378,7 @@ function EditorContent() {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(content);
+    navigator.clipboard.writeText(activeRenderText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -381,10 +434,10 @@ function EditorContent() {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       lineHeight: 26,
     });
-    const layoutItems = engine.calculateWordLayout(content, obstaclesRef.current, gap);
+    const layoutItems = engine.calculateWordLayout(activeRenderText, obstaclesRef.current, gap);
     const htmlContent = buildExportHTML(
       docType,
-      content,
+      activeRenderText,
       layoutItems,
       obstaclesRef.current,
       currentWidth,
@@ -428,7 +481,7 @@ function EditorContent() {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         lineHeight: 26,
       });
-      const layoutItems = engine.calculateWordLayout(content, obstaclesRef.current, gap);
+      const layoutItems = engine.calculateWordLayout(activeRenderText, obstaclesRef.current, gap);
 
       // 3. Draw text in deep black/dark color (#111827)
       ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -678,6 +731,12 @@ function EditorContent() {
               onSelectTemplate={handleSelectTemplate}
               onUploadImageFile={handleUploadImageFile}
               onReplaceImageFile={handleReplaceImageFile}
+              cardSide={cardSide}
+              onCardSideChange={setCardSide}
+              activeSlideIndex={activeSlideIndex}
+              slidesCount={slides.length}
+              onSlideChange={handleSlideChange}
+              onAddSlide={handleAddSlide}
             />
           </div>
 
@@ -701,8 +760,8 @@ function EditorContent() {
               } w-full lg:w-[var(--editor-width)] h-full overflow-hidden flex-col`}
             >
               <TextEditorPane
-                content={content}
-                onChange={setContent}
+                content={activeRenderText}
+                onChange={handleEditorChange}
                 mobileVisible={mobileWorkspaceTab === 'editor'}
               />
             </div>
@@ -736,9 +795,15 @@ function EditorContent() {
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
-                content={content}
+                content={activeRenderText}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
+                docType={docType}
+                cardSide={cardSide}
+                onToggleCardSide={handleCardSideToggle}
+                activeSlideIndex={activeSlideIndex}
+                slidesCount={slides.length}
+                onSlideChange={handleSlideChange}
               />
             </div>
           </main>

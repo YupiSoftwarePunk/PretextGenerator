@@ -33,6 +33,12 @@ interface EditorSidebarProps {
   onSelectTemplate: (template: Template) => void;
   onUploadImageFile: (file: File) => void;
   onReplaceImageFile: (id: string, file: File) => void;
+  cardSide?: 'front' | 'back';
+  onCardSideChange?: (side: 'front' | 'back') => void;
+  activeSlideIndex?: number;
+  slidesCount?: number;
+  onSlideChange?: (index: number) => void;
+  onAddSlide?: () => void;
 }
 
 const kindColor: Record<ObstacleKind, string> = {
@@ -65,6 +71,12 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onSelectTemplate,
   onUploadImageFile,
   onReplaceImageFile,
+  cardSide,
+  onCardSideChange,
+  activeSlideIndex,
+  slidesCount,
+  onSlideChange,
+  onAddSlide,
 }) => {
   const readmeTpls = getReadmeTemplates();
 
@@ -91,6 +103,68 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Contextual template tools */}
+      {docType === 'card' && onCardSideChange && (
+        <div className="p-3 bg-violet-950/30 border border-violet-500/30 rounded-2xl space-y-2">
+          <span className="text-xs font-mono font-bold text-violet-300 block">Сторона карточки (Flashcard)</span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onCardSideChange('front')}
+              className={`py-2 px-2 rounded-xl text-xs font-mono font-semibold transition-all border ${
+                cardSide === 'front'
+                  ? 'bg-violet-600 border-violet-400 text-white shadow'
+                  : 'bg-white/5 border-white/5 text-zinc-400 hover:text-white'
+              }`}
+            >
+              Лицевая (Front)
+            </button>
+            <button
+              onClick={() => onCardSideChange('back')}
+              className={`py-2 px-2 rounded-xl text-xs font-mono font-semibold transition-all border ${
+                cardSide === 'back'
+                  ? 'bg-violet-600 border-violet-400 text-white shadow'
+                  : 'bg-white/5 border-white/5 text-zinc-400 hover:text-white'
+              }`}
+            >
+              Обратная (Back)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {docType === 'slide' && onSlideChange && onAddSlide && (
+        <div className="p-3 bg-cyan-950/30 border border-cyan-500/30 rounded-2xl space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold text-cyan-300">Навигация по слайдам</span>
+            <span className="text-[11px] font-mono text-cyan-400">
+              {(activeSlideIndex || 0) + 1} из {slidesCount || 1}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onSlideChange((activeSlideIndex || 0) - 1)}
+              disabled={(activeSlideIndex || 0) === 0}
+              className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 disabled:opacity-40 transition-colors"
+            >
+              ◀ Назад
+            </button>
+            <button
+              onClick={() => onSlideChange((activeSlideIndex || 0) + 1)}
+              disabled={(activeSlideIndex || 0) >= (slidesCount || 1) - 1}
+              className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 hover:bg-white/10 disabled:opacity-40 transition-colors"
+            >
+              Вперед ▶
+            </button>
+          </div>
+          <button
+            onClick={onAddSlide}
+            className="w-full py-2 px-3 rounded-xl bg-cyan-600/30 border border-cyan-500/40 text-xs text-cyan-200 hover:bg-cyan-600/50 transition-all font-mono flex items-center justify-center gap-1.5"
+          >
+            <span>+ Новый слайд (---)</span>
+          </button>
+        </div>
+      )}
 
       {/* Pretext Obstacles Panel */}
       <div className="pt-3 border-t border-white/10 space-y-3">
