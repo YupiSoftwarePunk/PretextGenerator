@@ -55,7 +55,7 @@
 
 ---
 
-## Сборка для Production (Static Export)
+## Сборка для Production
 
 Проект настроен для статической генерации (подходит для GitHub Pages):
 ```bash
