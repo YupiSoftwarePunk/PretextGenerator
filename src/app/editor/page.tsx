@@ -719,6 +719,13 @@ function EditorContent() {
                 content={activeRenderText}
                 onChange={handleEditorChange}
                 mobileVisible={mobileWorkspaceTab === 'editor'}
+                docType={docType}
+                activeSlideIndex={activeSlideIndex}
+                slidesCount={slides.length}
+                onSlideChange={handleSlideChange}
+                onAddSlide={handleAddSlide}
+                cardSide={cardSide}
+                onToggleCardSide={handleCardSideToggle}
               />
             </div>
 
