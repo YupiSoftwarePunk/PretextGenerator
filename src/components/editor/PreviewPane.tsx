@@ -1,4 +1,5 @@
 import React, { RefObject, useState } from 'react';
+import Link from 'next/link';
 import {
   Layers,
   Eye,
@@ -12,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Printer,
+  Play,
 } from 'lucide-react';
 import { DocumentType } from '@/types';
 import PretextRenderer from '@/components/pretext/PretextRenderer';
@@ -123,6 +125,16 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
             <Layers className="w-3.5 h-3.5" />
             <span>Canvas Flow (120 FPS)</span>
           </button>
+
+          <Link
+            href={`/preview?type=${docType || 'slide'}`}
+            target="_blank"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold font-mono text-cyan-300 hover:text-white hover:bg-cyan-600/20 border border-cyan-500/20 transition-all min-h-[36px]"
+            title="Открыть презентацию в полноэкранном режиме показа (/preview)"
+          >
+            <Play className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Показ</span>
+          </Link>
         </div>
 
         {/* Action Buttons */}

@@ -15,6 +15,7 @@ import {
   BookOpen,
   Zap,
   FileBox,
+  Play,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ showAnchorLinks = false }) => {
   const isHome = pathname === '/';
   const isEditor = pathname.startsWith('/editor');
   const isGallery = pathname.startsWith('/gallery');
+  const isPreview = pathname.startsWith('/preview');
 
 
 
@@ -102,6 +104,15 @@ export const Header: React.FC<HeaderProps> = ({ showAnchorLinks = false }) => {
           >
             <LayoutGrid className="w-3.5 h-3.5" />
             <span>Галерея</span>
+          </Link>
+          <Link
+            href="/preview"
+            className={`hover:text-white transition-colors flex items-center gap-1.5 py-2 ${
+              isPreview ? 'text-cyan-400 font-bold' : ''
+            }`}
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>Презентация</span>
           </Link>
         </nav>
 
@@ -178,6 +189,17 @@ export const Header: React.FC<HeaderProps> = ({ showAnchorLinks = false }) => {
             >
               <LayoutGrid className="w-4 h-4 text-pink-400" />
               <span>Галерея документов</span>
+            </Link>
+
+            <Link
+              href="/preview"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl min-h-[44px] transition-colors ${
+                isPreview ? 'bg-violet-600/20 text-white font-bold border border-violet-500/30' : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Play className="w-4 h-4 text-cyan-400" />
+              <span>Показ / Презентация</span>
             </Link>
           </div>
 

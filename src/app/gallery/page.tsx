@@ -16,6 +16,7 @@ import {
   Copy,
   Check,
   Filter,
+  Play,
 } from 'lucide-react';
 import { Document, DocumentType, Template } from '@/types';
 import { templates } from '@/lib/templates';
@@ -379,6 +380,24 @@ export default function GalleryPage() {
                 >
                   Закрыть
                 </button>
+
+                <Link
+                  href={`/preview?${previewDoc.isPreset ? `type=${previewDoc.type}` : `id=${previewDoc.id}&type=${previewDoc.type}`}`}
+                  onClick={() =>
+                    handleOpenInStudio(
+                      previewDoc.type,
+                      previewDoc.content,
+                      previewDoc.title,
+                      previewDoc.isPreset ? undefined : previewDoc.id
+                    )
+                  }
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[42px] rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/40 text-violet-200 font-semibold text-xs transition-all active:scale-95"
+                  title="Открыть в полноэкранном режиме показа"
+                >
+                  <Play className="w-4 h-4 text-violet-400" />
+                  <span>Показ</span>
+                </Link>
+
                 <Link
                   href={`/editor?type=${previewDoc.type}`}
                   onClick={() =>
