@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { DocumentType } from '@/types';
 import PretextRenderer from '@/components/pretext/PretextRenderer';
+import { UnifiedPretextDocument } from '@/components/pretext/UnifiedPretextDocument';
+import { PretextObstacle } from './types';
 
 interface PreviewPaneProps {
   mobileVisible: boolean;
@@ -41,7 +43,12 @@ interface PreviewPaneProps {
   activeSlideIndex?: number;
   slidesCount?: number;
   onSlideChange?: (index: number) => void;
+  obstacles?: PretextObstacle[];
+  gap?: number;
+  onUpdateObstacle?: (id: string, updates: Partial<PretextObstacle>) => void;
+  onRemoveObstacle?: (id: string) => void;
 }
+
 
 export const PreviewPane: React.FC<PreviewPaneProps> = ({
   mobileVisible,
@@ -69,6 +76,10 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   activeSlideIndex,
   slidesCount,
   onSlideChange,
+  obstacles = [],
+  gap = 14,
+  onUpdateObstacle,
+  onRemoveObstacle,
 }) => {
   return (
     <div
@@ -81,6 +92,18 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
         {/* Tab Selector */}
         <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
           <button
+            onClick={() => setActiveTab('card')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all min-h-[36px] ${
+              activeTab === 'card'
+                ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-md shadow-violet-600/30'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>README + Стикеры</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('flow')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all min-h-[36px] ${
               activeTab === 'flow'
@@ -89,20 +112,10 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Pretext Flow</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('card')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all min-h-[36px] ${
-              activeTab === 'card'
-                ? 'bg-violet-600 text-white shadow'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Formatted</span>
+            <span>Canvas Flow (120 FPS)</span>
           </button>
         </div>
+
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
@@ -235,10 +248,24 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           ref={cardContainerRef}
           className={`${
             activeTab === 'card' ? 'flex' : 'hidden'
-          } w-full glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-white/10 max-w-lg shadow-2xl flex-col`}
+          } w-full flex-col`}
         >
-          <PretextRenderer content={content} />
+          <UnifiedPretextDocument
+            content={content}
+            obstacles={obstacles}
+            gap={gap}
+            docType={docType || 'slide'}
+            cardSide={cardSide}
+            activeSlideIndex={activeSlideIndex}
+            slidesCount={slidesCount}
+            onToggleCardSide={onToggleCardSide}
+            onSlideChange={onSlideChange}
+            onUpdateObstacle={onUpdateObstacle}
+            onRemoveObstacle={onRemoveObstacle}
+            isInteractive={true}
+          />
         </div>
+
       </div>
     </div>
   );

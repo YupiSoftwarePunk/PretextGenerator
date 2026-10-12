@@ -60,8 +60,9 @@ function EditorContent() {
   }, []);
 
   const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<'editor' | 'settings' | 'preview'>('editor');
-  const [activeTab, setActiveTab] = useState<'flow' | 'card'>('flow');
+  const [activeTab, setActiveTab] = useState<'flow' | 'card'>('card');
   const [copied, setCopied] = useState(false);
+
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [gap, setGap] = useState<number>(14);
 
@@ -804,7 +805,12 @@ function EditorContent() {
                 activeSlideIndex={activeSlideIndex}
                 slidesCount={slides.length}
                 onSlideChange={handleSlideChange}
+                obstacles={obstacles}
+                gap={gap}
+                onUpdateObstacle={handleUpdateObstacle}
+                onRemoveObstacle={handleRemoveObstacle}
               />
+
             </div>
           </main>
         </div>
