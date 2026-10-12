@@ -11,9 +11,25 @@ export const THEME_COLORS: Record<ObstacleTheme, { border: string; fill: string;
   cyan: { border: '#22d3ee', fill: 'rgba(6,182,212,0.2)', text: '#ecfeff' },
   dark: { border: '#71717a', fill: 'rgba(24,24,27,0.85)', text: '#f4f4f5' },
   neon: { border: '#e879f9', fill: 'rgba(232,121,249,0.25)', text: '#ffffff' },
+  rose: { border: '#fb7185', fill: 'rgba(251,113,133,0.22)', text: '#ffe4e6' },
+  indigo: { border: '#818cf8', fill: 'rgba(129,140,248,0.22)', text: '#e0e7ff' },
 };
 
+
+export function getObstacleIcon(kind: PretextObstacle['kind']): string {
+  switch (kind) {
+    case 'image': return '🖼';
+    case 'quote': return '💬';
+    case 'badge': return '⚡';
+    case 'callout': return '📝';
+    case 'sticker': return '✨';
+    case 'metric': return '📊';
+    default: return '⚡';
+  }
+}
+
 export function drawObstacleOnCanvas(
+
   ctx: CanvasRenderingContext2D,
   obs: PretextObstacle,
   isDragging: boolean
@@ -100,7 +116,7 @@ export function drawObstacleOnCanvas(
     ctx.fillStyle = textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(obs.kind === 'image' ? '🖼' : obs.kind === 'quote' ? '💬' : '⚡', cx, cy - 10);
+    ctx.fillText(getObstacleIcon(obs.kind), cx, cy - 10);
     ctx.font = '600 10px monospace';
     ctx.fillStyle = textColor;
     ctx.fillText(obs.label, cx, cy + 10);
@@ -120,7 +136,7 @@ export function drawObstacleOnCanvas(
     ctx.shadowBlur = 0;
 
     // Inner content by kind
-    const icon = obs.kind === 'badge' ? '⚡' : obs.kind === 'quote' ? '💬' : '🖼';
+    const icon = getObstacleIcon(obs.kind);
     ctx.font = 'bold 16px system-ui';
     ctx.fillStyle = textColor;
     ctx.textAlign = 'center';
@@ -159,10 +175,11 @@ export function buildExportHTML(
     const radius = obs.shape === 'circle' ? '50%' : '12px';
 
     return `<div style="position: absolute; left: ${obs.x}px; top: ${obs.y}px; width: ${obs.width}px; height: ${obs.height}px; background: ${fillColor}; border: 1.5px solid ${borderColor}; border-radius: ${radius}; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 20px ${borderColor}40; backdrop-filter: blur(4px); color: ${textColor}; font-family: monospace; text-align: center; padding: 8px;">
-      <div style="font-size: 16px; margin-bottom: 4px;">${obs.kind === 'badge' ? '⚡' : obs.kind === 'quote' ? '💬' : '🖼'}</div>
+      <div style="font-size: 16px; margin-bottom: 4px;">${getObstacleIcon(obs.kind)}</div>
       <div style="font-size: 10px; font-weight: bold; color: ${textColor};">${obs.label}</div>
     </div>`;
   }).join('\n');
+
 
   const wordSpans = layoutItems
     .map(

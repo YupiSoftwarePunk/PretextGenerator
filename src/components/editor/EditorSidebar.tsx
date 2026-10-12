@@ -45,15 +45,20 @@ const kindColor: Record<ObstacleKind, string> = {
   image: 'text-violet-400 border-violet-500/40 bg-violet-950/50',
   quote: 'text-cyan-400 border-cyan-500/40 bg-cyan-950/50',
   badge: 'text-amber-400 border-amber-500/40 bg-amber-950/50',
+  callout: 'text-emerald-400 border-emerald-500/40 bg-emerald-950/50',
+  sticker: 'text-pink-400 border-pink-500/40 bg-pink-950/50',
+  metric: 'text-blue-400 border-blue-500/40 bg-blue-950/50',
 };
 
 const THEMES: { id: ObstacleTheme; label: string; color: string }[] = [
   { id: 'violet', label: 'Фиолетовая', color: '#c084fc' },
-  { id: 'emerald', label: 'Имрумдная', color: '#4ade80' },
+  { id: 'emerald', label: 'Изумрудная', color: '#4ade80' },
   { id: 'amber', label: 'Янтарная', color: '#f59e0b' },
   { id: 'cyan', label: 'Неоново-синяя', color: '#22d3ee' },
   { id: 'dark', label: 'Строгая темная', color: '#71717a' },
   { id: 'neon', label: 'Яркая градиентная', color: '#e879f9' },
+  { id: 'rose', label: 'Розовый неон', color: '#fb7185' },
+  { id: 'indigo', label: 'Индиго', color: '#818cf8' },
 ];
 
 export const EditorSidebar: React.FC<EditorSidebarProps> = ({
