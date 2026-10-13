@@ -3,9 +3,11 @@
 :root {
   --background: #09090B;
   --foreground: #FAFAFA;
-  --font-pixel: var(--font-vt323);
-  --font-retro: var(--font-press-start);
-  --font-neon: var(--font-orbitron);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-pixel: var(--font-mono);
+  --font-retro: var(--font-mono);
+  --font-neon: var(--font-unbounded), var(--font-orbitron), system-ui, sans-serif;
 }
 
 @theme inline {
@@ -21,7 +23,7 @@ html, body {
 body {
   background: #09090B;
   color: var(--foreground);
-  font-family: var(--font-neon), system-ui, sans-serif;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
 }
 

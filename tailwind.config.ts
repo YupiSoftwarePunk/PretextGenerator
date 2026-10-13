@@ -39,9 +39,12 @@ const config: Config = {
         },
       },
       fontFamily: {
-        pixel: ['var(--font-vt323)', 'monospace'],
-        retro: ['var(--font-press-start)', 'monospace'],
-        neon: ['var(--font-orbitron)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+        pixel: ['var(--font-mono)', 'monospace'],
+        retro: ['var(--font-mono)', 'monospace'],
+        neon: ['var(--font-unbounded)', 'var(--font-orbitron)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-unbounded)', 'var(--font-orbitron)', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
