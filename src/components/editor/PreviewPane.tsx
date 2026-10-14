@@ -1,4 +1,4 @@
-import React, { RefObject } from 'react';
+import React, { RefObject, useState } from 'react';
 import {
   Layers,
   Eye,
@@ -11,6 +11,7 @@ import {
   RotateCw,
   ChevronLeft,
   ChevronRight,
+  Printer,
 } from 'lucide-react';
 import { DocumentType } from '@/types';
 import PretextRenderer from '@/components/pretext/PretextRenderer';
@@ -23,9 +24,9 @@ interface PreviewPaneProps {
   mobileVisible: boolean;
   activeTab: 'flow' | 'card';
   setActiveTab: (tab: 'flow' | 'card') => void;
-  onExportPNG: () => void;
+  onExportPNG: (scale?: 1 | 2 | 4) => void;
   onExportHTML: () => void;
-  onExportPDF: () => void;
+  onExportPDF: (options?: { allSlides?: boolean; twoSidedPrint?: boolean }) => void;
   onCopy: () => void;
   copied: boolean;
   onSave: () => void;
@@ -87,6 +88,8 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   onUpdateObstacle,
   onRemoveObstacle,
 }) => {
+  const [pngScale, setPngScale] = useState<1 | 2 | 4>(2);
+
   return (
     <div
       className={`${
@@ -122,35 +125,78 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           </button>
         </div>
 
-
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={onExportPNG}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-cyan-300 hover:bg-white/10 transition-colors min-h-[36px]"
-            title="Экспорт Pretext-макета в PNG"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>PNG</span>
-          </button>
+          {/* PNG Export with Resolution Selector (1x, 2x, 4x) */}
+          <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-0.5">
+            <button
+              onClick={() => onExportPNG(pngScale)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono text-cyan-300 hover:text-cyan-200 transition-colors min-h-[34px]"
+              title={`Экспорт в PNG (${pngScale}x ${pngScale === 1 ? 'Standard' : pngScale === 2 ? 'Retina' : 'Print'})`}
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>PNG</span>
+            </button>
+            <div className="flex items-center gap-0.5 pr-1 pl-0.5 border-l border-white/10 text-[10px] font-mono">
+              {([1, 2, 4] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setPngScale(s);
+                    onExportPNG(s);
+                  }}
+                  className={`px-1.5 py-0.5 rounded transition-all ${
+                    pngScale === s
+                      ? 'bg-cyan-500/30 text-cyan-200 font-bold border border-cyan-500/40'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title={`Масштаб ${s}x (${s === 1 ? '1x Standard' : s === 2 ? '2x Retina' : '4x Ultra/Print'})`}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
+          </div>
 
+          {/* HTML Standalone Export */}
           <button
             onClick={onExportHTML}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-pink-300 hover:bg-white/10 transition-colors min-h-[36px]"
-            title="Экспорт Pretext-макета в HTML"
+            title="Экспорт чистого автономного HTML с инлайновыми SVG и стикерами"
           >
             <FileCode className="w-3.5 h-3.5" />
             <span>HTML</span>
           </button>
 
-          <button
-            onClick={onExportPDF}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-emerald-300 hover:bg-white/10 transition-colors min-h-[36px]"
-            title="Экспорт в PDF (печать / сохранение в PDF)"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>PDF</span>
-          </button>
+          {/* PDF Export (Contextual: Multi-slide presentation, 2-sided flashcards, or single doc) */}
+          {docType === 'slide' ? (
+            <button
+              onClick={() => onExportPDF({ allSlides: true })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-emerald-300 hover:bg-white/10 transition-colors min-h-[36px]"
+              title={`Экспорт презентации в многостраничный PDF (${slidesCount || 1} слайдов)`}
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>PDF ({slidesCount || 1} стр.)</span>
+            </button>
+          ) : docType === 'card' ? (
+            <button
+              onClick={() => onExportPDF({ twoSidedPrint: true })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-emerald-300 hover:bg-white/10 transition-colors min-h-[36px]"
+              title="Экспорт в PDF для двухсторонней печати (Лицо/Оборот для вырезания)"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>PDF (Печать)</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onExportPDF()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-emerald-300 hover:bg-white/10 transition-colors min-h-[36px]"
+              title="Экспорт документа в PDF"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>PDF</span>
+            </button>
+          )}
 
           <button
             onClick={onCopy}

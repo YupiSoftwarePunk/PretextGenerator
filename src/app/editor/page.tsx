@@ -8,12 +8,17 @@ import { PretextEngine, WordLayoutItem } from '@/lib/PretextEngine';
 import { Header } from '@/components/layout/Header';
 import { PretextObstacle, ObstacleKind } from '../../components/editor/types';
 import { PRESETS } from '../../components/editor/constants';
-import { drawObstacleOnCanvas, buildExportHTML } from '../../components/editor/utils/canvasUtils';
+import { drawObstacleOnCanvas } from '../../components/editor/utils/canvasUtils';
 import { EditorSidebar } from '../../components/editor/EditorSidebar';
 import { TextEditorPane } from '@/components/editor/TextEditorPane';
 import { PreviewPane } from '@/components/editor/PreviewPane';
 import { useAutoSave, getActiveDocument, clearActiveDocument } from '@/lib/storage';
-import jsPDF from 'jspdf';
+import {
+  exportToPNG,
+  exportToHTML,
+  exportSlidesToPDF,
+  exportFlashcardsToPrintPDF,
+} from '@/lib/export';
 
 function EditorContent() {
   const searchParams = useSearchParams();
@@ -393,111 +398,72 @@ function EditorContent() {
     }
   };
 
-  const handleExportPNG = () => {
-    if (activeTab !== 'flow') {
-      setActiveTab('flow');
+  const handleExportPNG = (scale: 1 | 2 | 4 = 2) => {
+    try {
+      exportToPNG({
+        docType,
+        content: activeRenderText,
+        obstacles: obstaclesRef.current,
+        containerWidth: containerWidthRef.current || 600,
+        containerHeight: window.innerWidth < 640 ? 350 : 400,
+        gap,
+        scale,
+        canvas: activeTab === 'flow' ? canvasRef.current : null,
+      });
+    } catch (e) {
+      console.error('Export PNG failed:', e);
+      alert('Ошибка экспорта в PNG: ' + e);
     }
-    setTimeout(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        alert('Холст не найден. Переключитесь на вкладку Pretext Flow для экспорта.');
-        return;
-      }
-      try {
-        const url = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `pretext_${docType}_${Date.now()}.png`;
-        a.click();
-      } catch (e) {
-        console.error('Export PNG failed:', e);
-        alert('Ошибка экспорта в PNG: ' + e);
-      }
-    }, 120);
   };
 
   const handleExportHTML = () => {
-    const currentWidth = containerWidthRef.current;
-    const engine = new PretextEngine({
-      containerWidth: currentWidth,
-      fontSize: 15,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      lineHeight: 26,
-    });
-    const layoutItems = engine.calculateWordLayout(activeRenderText, obstaclesRef.current, gap);
-    const htmlContent = buildExportHTML(
-      docType,
-      activeRenderText,
-      layoutItems,
-      obstaclesRef.current,
-      currentWidth,
-      400
-    );
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pretext_${docType}_${Date.now()}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      exportToHTML({
+        docType,
+        title: docTitle,
+        content: activeRenderText,
+        obstacles: obstaclesRef.current,
+        containerWidth: containerWidthRef.current || 680,
+        containerHeight: 400,
+        gap,
+      });
+    } catch (e) {
+      console.error('Export HTML failed:', e);
+      alert('Ошибка экспорта в HTML: ' + e);
+    }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = (options?: { allSlides?: boolean; twoSidedPrint?: boolean }) => {
     try {
-      const currentWidth = containerWidthRef.current || 600;
-      const currentHeight = window.innerWidth < 640 ? 350 : 400;
-
-      const exportCanvas = document.createElement('canvas');
-      const dpr = 2;
-      exportCanvas.width = currentWidth * dpr;
-      exportCanvas.height = currentHeight * dpr;
-
-      const ctx = exportCanvas.getContext('2d');
-      if (!ctx) {
-        alert('Не удалось создать контекст холста для экспорта в PDF.');
-        return;
+      if (docType === 'slide' && options?.allSlides !== false) {
+        exportSlidesToPDF({
+          docType: 'slide',
+          title: docTitle,
+          content,
+          obstacles: obstaclesRef.current,
+          containerWidth: containerWidthRef.current || 720,
+          containerHeight: window.innerWidth < 640 ? 350 : 440,
+          gap,
+        });
+      } else if (docType === 'card' && options?.twoSidedPrint) {
+        exportFlashcardsToPrintPDF({
+          docType: 'card',
+          title: docTitle,
+          content,
+          obstacles: obstaclesRef.current,
+          gap,
+        });
+      } else {
+        exportSlidesToPDF({
+          docType,
+          title: docTitle,
+          content: activeRenderText,
+          obstacles: obstaclesRef.current,
+          containerWidth: containerWidthRef.current || 640,
+          containerHeight: window.innerWidth < 640 ? 350 : 400,
+          gap,
+        });
       }
-
-      ctx.scale(dpr, dpr);
-
-      // 1. Solid white background for perfect PDF contrast
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, currentWidth, currentHeight);
-
-      // 2. Calculate layout
-      const engine = new PretextEngine({
-        containerWidth: currentWidth,
-        fontSize: 15,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        lineHeight: 26,
-      });
-      const layoutItems = engine.calculateWordLayout(activeRenderText, obstaclesRef.current, gap);
-
-      // 3. Draw text in deep black/dark color (#111827)
-      ctx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = '#111827';
-      ctx.textBaseline = 'alphabetic';
-
-      for (let i = 0; i < layoutItems.length; i++) {
-        const item = layoutItems[i];
-        ctx.fillText(item.word, item.x, item.y);
-      }
-
-      // 4. Draw obstacles
-      obstaclesRef.current.forEach((obs) => {
-        drawObstacleOnCanvas(ctx, obs, false);
-      });
-
-      // 5. Generate PDF
-      const imgData = exportCanvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: currentWidth > currentHeight ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [currentWidth, currentHeight],
-      });
-
-      pdf.addImage(imgData, 'PNG', 0, 0, currentWidth, currentHeight);
-      pdf.save(`pretext_${docType}_${Date.now()}.pdf`);
     } catch (e) {
       console.error('Export PDF failed:', e);
       alert('Ошибка экспорта в PDF: ' + e);
