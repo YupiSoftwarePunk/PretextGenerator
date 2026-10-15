@@ -1,3 +1,5 @@
+import type { PretextObstacle } from '@/components/editor/types';
+
 export type DocumentType = 'slide' | 'card' | 'cheatsheet';
 
 export interface Document {
@@ -8,6 +10,7 @@ export interface Document {
   createdAt: string;
   updatedAt: string;
   templateId?: string;
+  obstacles?: PretextObstacle[];
 }
 
 export interface Template {

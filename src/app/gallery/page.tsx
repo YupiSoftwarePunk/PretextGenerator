@@ -23,44 +23,18 @@ import PretextRenderer from '@/components/pretext/PretextRenderer';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import { Header } from '@/components/layout/Header';
 
+import {
+  getDocuments,
+  deleteDocument,
+  subscribeToDocuments,
+  setActiveDocument,
+} from '@/lib/storage';
+
 const emptyDocs: Document[] = [];
-
-let cachedRaw: string | null = null;
-let cachedDocs: Document[] = emptyDocs;
-
-function subscribeStorage(callback: () => void) {
-  window.addEventListener('storage', callback);
-  window.addEventListener('focus', callback);
-  return () => {
-    window.removeEventListener('storage', callback);
-    window.removeEventListener('focus', callback);
-  };
-}
-
-function getStoredDocs(): Document[] {
-  if (typeof window === 'undefined') return emptyDocs;
-  try {
-    const raw = localStorage.getItem('pretext_docs');
-    if (raw === null) {
-      if (cachedRaw !== null) {
-        cachedRaw = null;
-        cachedDocs = emptyDocs;
-      }
-      return cachedDocs;
-    }
-    if (raw !== cachedRaw) {
-      cachedRaw = raw;
-      cachedDocs = JSON.parse(raw);
-    }
-    return cachedDocs;
-  } catch {
-    return emptyDocs;
-  }
-}
 
 export default function GalleryPage() {
   const isMounted = useIsMounted();
-  const savedDocs = useSyncExternalStore(subscribeStorage, getStoredDocs, () => emptyDocs);
+  const savedDocs = useSyncExternalStore(subscribeToDocuments, getDocuments, () => emptyDocs);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,23 +51,13 @@ export default function GalleryPage() {
 
   const [copied, setCopied] = useState(false);
 
-  const handleOpenInStudio = (type: DocumentType, content: string, title: string) => {
-    try {
-      localStorage.setItem('pretext_active_doc', JSON.stringify({ type, content, title }));
-    } catch (e) {
-      console.error('Failed to save active doc', e);
-    }
+  const handleOpenInStudio = (type: DocumentType, content: string, title: string, id?: string) => {
+    setActiveDocument({ id, type, content, title });
   };
 
   const handleDelete = (id: string) => {
-    const updated = savedDocs.filter((d) => d.id !== id);
-    try {
-      localStorage.setItem('pretext_docs', JSON.stringify(updated));
-      window.dispatchEvent(new Event('storage'));
-      if (previewDoc?.id === id) setPreviewDoc(null);
-    } catch (e) {
-      console.error('Failed to delete doc', e);
-    }
+    deleteDocument(id);
+    if (previewDoc?.id === id) setPreviewDoc(null);
   };
 
   const handleCopy = (content: string) => {
@@ -288,7 +252,7 @@ export default function GalleryPage() {
 
                       <Link
                         href={`/editor?type=${doc.type}`}
-                        onClick={() => handleOpenInStudio(doc.type, doc.content, doc.title)}
+                        onClick={() => handleOpenInStudio(doc.type, doc.content, doc.title, doc.id)}
                         className={`flex items-center gap-1.5 px-3 py-2 min-h-[40px] text-xs font-semibold transition-colors active:scale-95 ${
                           doc.type === 'slide' ? 'text-violet-400 group-hover:text-violet-300' : doc.type === 'card' ? 'text-cyan-400 group-hover:text-cyan-300' : 'text-pink-400 group-hover:text-pink-300'
                         }`}
@@ -417,7 +381,14 @@ export default function GalleryPage() {
                 </button>
                 <Link
                   href={`/editor?type=${previewDoc.type}`}
-                  onClick={() => handleOpenInStudio(previewDoc.type, previewDoc.content, previewDoc.title)}
+                  onClick={() =>
+                    handleOpenInStudio(
+                      previewDoc.type,
+                      previewDoc.content,
+                      previewDoc.title,
+                      previewDoc.isPreset ? undefined : previewDoc.id
+                    )
+                  }
                   className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-5 py-2.5 min-h-[42px] rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-xs shadow-lg shadow-violet-600/30 transition-all active:scale-95"
                 >
                   <Edit3 className="w-4 h-4" />

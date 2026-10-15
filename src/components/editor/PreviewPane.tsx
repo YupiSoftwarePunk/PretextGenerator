@@ -16,6 +16,8 @@ import { DocumentType } from '@/types';
 import PretextRenderer from '@/components/pretext/PretextRenderer';
 import { UnifiedPretextDocument } from '@/components/pretext/UnifiedPretextDocument';
 import { PretextObstacle } from './types';
+import { AutoSaveStatus } from '@/lib/storage';
+import { Loader2 } from 'lucide-react';
 
 interface PreviewPaneProps {
   mobileVisible: boolean;
@@ -28,6 +30,8 @@ interface PreviewPaneProps {
   copied: boolean;
   onSave: () => void;
   savedSuccess: boolean;
+  autoSaveStatus?: AutoSaveStatus;
+  lastSavedAt?: Date | null;
   containerRef: RefObject<HTMLDivElement | null>;
   cardContainerRef: RefObject<HTMLDivElement | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -61,6 +65,8 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   copied,
   onSave,
   savedSuccess,
+  autoSaveStatus = 'idle',
+  lastSavedAt,
   containerRef,
   cardContainerRef,
   canvasRef,
@@ -154,12 +160,40 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
 
+          {/* AutoSave Indicator */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/5 text-[11px] font-mono select-none">
+            {autoSaveStatus === 'saving' ? (
+              <>
+                <Loader2 className="w-3 h-3 text-amber-400 animate-spin" />
+                <span className="text-amber-300">Сохранение...</span>
+              </>
+            ) : autoSaveStatus === 'saved' || savedSuccess ? (
+              <>
+                <Check className="w-3 h-3 text-emerald-400" />
+                <span className="text-emerald-300">Сохранено</span>
+              </>
+            ) : lastSavedAt ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70" />
+                <span className="text-zinc-400 hidden sm:inline">
+                  {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                <span className="text-zinc-500 hidden sm:inline">Автосохранение</span>
+              </>
+            )}
+          </div>
+
           <button
             onClick={onSave}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold text-xs shadow-md shadow-violet-600/30 transition-all min-h-[36px]"
+            disabled={autoSaveStatus === 'saving'}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-60 text-white font-semibold text-xs shadow-md shadow-violet-600/30 transition-all min-h-[36px]"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>{savedSuccess ? 'Сохранено!' : 'Сохранить'}</span>
+            <span>{savedSuccess || autoSaveStatus === 'saved' ? 'Сохранено!' : 'Сохранить'}</span>
           </button>
         </div>
       </div>

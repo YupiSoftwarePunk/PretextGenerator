@@ -12,51 +12,31 @@ import { drawObstacleOnCanvas, buildExportHTML } from '../../components/editor/u
 import { EditorSidebar } from '../../components/editor/EditorSidebar';
 import { TextEditorPane } from '@/components/editor/TextEditorPane';
 import { PreviewPane } from '@/components/editor/PreviewPane';
+import { useAutoSave, getActiveDocument, clearActiveDocument } from '@/lib/storage';
 import jsPDF from 'jspdf';
 
 function EditorContent() {
   const searchParams = useSearchParams();
   const initialType = (searchParams.get('type') as DocumentType) || 'slide';
 
-  const [docType, setDocType] = useState<DocumentType>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('pretext_active_doc');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed.type) return parsed.type;
-        }
-      } catch (e) {
-        console.error('Failed to load active doc type', e);
-      }
-    }
-    return initialType;
-  });
+  // Read initial document from active doc transition (e.g. from gallery)
+  const [initialDocState] = useState(() => getActiveDocument());
+  const [docId, setDocId] = useState<string | undefined>(initialDocState?.id);
+  const [docTitle, setDocTitle] = useState<string>(
+    initialDocState?.title ||
+      `${(initialDocState?.type || initialType).toUpperCase()} — ${new Date().toLocaleDateString('ru-RU')}`
+  );
+
+  const [docType, setDocType] = useState<DocumentType>(initialDocState?.type || initialType);
 
   const [content, setContent] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('pretext_active_doc');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed.content) return parsed.content;
-        }
-      } catch (e) {
-        console.error('Failed to load active doc content', e);
-      }
-    }
+    if (initialDocState?.content) return initialDocState.content;
     const preset = PRESETS[initialType];
     return preset.text;
   });
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem('pretext_active_doc')) {
-        localStorage.removeItem('pretext_active_doc');
-      }
-    } catch (e) {
-      console.error('Failed to clean active doc key', e);
-    }
+    clearActiveDocument();
   }, []);
 
   const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<'editor' | 'settings' | 'preview'>('editor');
@@ -93,8 +73,28 @@ function EditorContent() {
   const isResizingEditor = useRef(false);
 
   const [obstacles, setObstacles] = useState<PretextObstacle[]>(() => {
+    if (initialDocState?.obstacles && initialDocState.obstacles.length > 0) {
+      return initialDocState.obstacles;
+    }
     const preset = PRESETS[initialType];
     return preset.obstacles.map((o, i) => ({ ...o, id: `obs_${Date.now()}_${i}` }));
+  });
+
+  const {
+    status: autoSaveStatus,
+    lastSavedAt,
+    saveNow,
+  } = useAutoSave({
+    docId,
+    type: docType,
+    title: docTitle,
+    content,
+    obstacles,
+    enabled: true,
+    debounceMs: 1200,
+    onSaved: (saved) => {
+      setDocId(saved.id);
+    },
   });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -385,22 +385,11 @@ function EditorContent() {
   };
 
   const handleSaveToLocalStorage = () => {
-    try {
-      const existing = JSON.parse(localStorage.getItem('pretext_docs') || '[]');
-      const newDoc = {
-        id: 'doc_' + Date.now(),
-        type: docType,
-        title: `${docType.toUpperCase()} — ${new Date().toLocaleDateString()}`,
-        content,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      localStorage.setItem('pretext_docs', JSON.stringify([newDoc, ...existing]));
-      window.dispatchEvent(new Event('storage'));
+    const saved = saveNow();
+    if (saved) {
+      setDocId(saved.id);
       setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 2500);
-    } catch (e) {
-      console.error('Failed to save', e);
+      setTimeout(() => setSavedSuccess(false), 2000);
     }
   };
 
@@ -790,6 +779,8 @@ function EditorContent() {
                 copied={copied}
                 onSave={handleSaveToLocalStorage}
                 savedSuccess={savedSuccess}
+                autoSaveStatus={autoSaveStatus}
+                lastSavedAt={lastSavedAt}
                 containerRef={containerRef}
                 cardContainerRef={cardContainerRef}
                 canvasRef={canvasRef}
