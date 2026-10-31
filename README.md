@@ -38,13 +38,13 @@
 
 1. **Клонируйте репозиторий:**
    ```bash
-   git clone https://github.com/your-username/pretext.git
+   git clone https://github.com/YupiSoftwarePunk/PretextGenerator.git
    cd pretext
    ```
 
 2. **Установите зависимости:**
    ```bash
-   npm install
+   npm i
    ```
 
 3. **Запустите сервер разработки:**
