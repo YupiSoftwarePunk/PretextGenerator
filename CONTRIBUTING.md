@@ -46,14 +46,14 @@ This helps reduce duplicate work and makes it easier to align with the current v
 2. Clone your fork locally:
 
 ```bash
-git clone https://github.com/<your-username>/PretextGenerator.git
+git clone https://github.com/YupiSoftwarePunk/PretextGenerator.git
 cd PretextGenerator
 ```
 
 3. Install dependencies:
 
 ```bash
-npm install
+npm i
 ```
 
 4. Run the development server:
