@@ -3,6 +3,18 @@ import { DocumentType } from '@/types';
 export type ObstacleKind = 'image' | 'quote' | 'badge' | 'callout' | 'sticker' | 'metric';
 export type ObstacleTheme = 'violet' | 'emerald' | 'amber' | 'cyan' | 'dark' | 'neon' | 'rose' | 'indigo';
 
+export interface PresetBadgeTemplate {
+  id: string;
+  kind: ObstacleKind;
+  label: string;
+  sublabel?: string;
+  theme: ObstacleTheme;
+  shape: 'rect' | 'circle';
+  width: number;
+  height: number;
+  icon?: string;
+}
+
 export interface PretextObstacle {
   id: string;
   kind: ObstacleKind;

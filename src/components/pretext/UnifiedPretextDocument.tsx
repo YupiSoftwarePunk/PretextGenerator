@@ -60,6 +60,7 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
   const [draggingObsId, setDraggingObsId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const stageRef = React.useRef<HTMLDivElement | null>(null);
 
   // Filter obstacles relevant to current context
   const activeObstacles = obstacles.filter((obs) => {
@@ -81,9 +82,9 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
   const handleObstaclePointerDown = (e: React.PointerEvent, obs: PretextObstacle) => {
     if (!isInteractive) return;
     if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
+    const stage = stageRef.current || containerRef.current;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     setDraggingObsId(obs.id);
@@ -96,17 +97,20 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
 
   const handleObstaclePointerMove = (e: React.PointerEvent) => {
     if (!draggingObsId || !onUpdateObstacle) return;
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
+    const stage = stageRef.current || containerRef.current;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     const targetObs = activeObstacles.find((o) => o.id === draggingObsId);
     if (!targetObs) return;
 
-    const newX = Math.max(0, Math.min(container.clientWidth - targetObs.width, x - dragOffset.x));
-    const newY = Math.max(0, Math.min(container.clientHeight - targetObs.height, y - dragOffset.y));
+    const stageWidth = stage.clientWidth || 500;
+    const stageHeight = Math.max(380, stage.clientHeight || 400);
+
+    const newX = Math.max(0, Math.min(stageWidth - targetObs.width, x - dragOffset.x));
+    const newY = Math.max(0, Math.min(stageHeight - targetObs.height, y - dragOffset.y));
 
     onUpdateObstacle(draggingObsId, { x: newX, y: newY });
   };
@@ -170,7 +174,7 @@ export const UnifiedPretextDocument: React.FC<UnifiedPretextDocumentProps> = ({
       </div>
 
       {/* Main Flow Content with Absolute Positioned Draggable Stickers */}
-      <div className="relative text-zinc-100 text-sm leading-relaxed overflow-hidden min-h-[360px]">
+      <div ref={stageRef} className="relative text-zinc-100 text-sm leading-relaxed overflow-hidden min-h-[360px]">
         {/* Render Floating Geometric Obstacles & Stickers */}
         {activeObstacles.map((obs) => {
           const themeKey = obs.theme || (obs.kind === 'badge' ? 'amber' : obs.kind === 'quote' ? 'cyan' : 'violet');

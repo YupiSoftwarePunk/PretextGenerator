@@ -6,7 +6,7 @@ import { Code, Sliders, Eye } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
 import { PretextEngine, WordLayoutItem } from '@/lib/PretextEngine';
 import { Header } from '@/components/layout/Header';
-import { PretextObstacle, ObstacleKind } from '../../components/editor/types';
+import { PretextObstacle, ObstacleKind, PresetBadgeTemplate } from '../../components/editor/types';
 import { PRESETS } from '../../components/editor/constants';
 import { drawObstacleOnCanvas } from '../../components/editor/utils/canvasUtils';
 import { EditorSidebar } from '../../components/editor/EditorSidebar';
@@ -492,6 +492,25 @@ function EditorContent() {
     setObstacles(updated);
   };
 
+  const handleAddPresetBadge = (presetBadge: PresetBadgeTemplate) => {
+    const newObs: PretextObstacle = {
+      id: `obs_${Date.now()}`,
+      x: Math.floor(Math.random() * 120) + 40,
+      y: Math.floor(Math.random() * 100) + 40,
+      width: presetBadge.width,
+      height: presetBadge.height,
+      shape: presetBadge.shape,
+      gap,
+      kind: presetBadge.kind,
+      label: presetBadge.label,
+      sublabel: presetBadge.sublabel,
+      theme: presetBadge.theme,
+    };
+    const updated = [...obstaclesRef.current, newObs];
+    obstaclesRef.current = updated;
+    setObstacles(updated);
+  };
+
   const handleRemoveObstacle = (id: string) => {
     const updated = obstaclesRef.current.filter((o) => o.id !== id);
     obstaclesRef.current = updated;
@@ -499,18 +518,16 @@ function EditorContent() {
   };
 
   const handleUpdateObstacle = (id: string, updates: Partial<PretextObstacle>) => {
-    const currentWidth = containerWidthRef.current;
+    const currentWidth = containerWidthRef.current || 600;
     const updated = obstaclesRef.current.map((o) => {
       if (o.id !== id) return o;
       const w = updates.width !== undefined ? updates.width : o.width;
       const h = updates.height !== undefined ? updates.height : o.height;
-      const maxW = Math.max(60, currentWidth - o.x);
-      const maxH = Math.max(50, 390 - o.y);
       return {
         ...o,
         ...updates,
-        width: Math.min(w, maxW),
-        height: Math.min(h, maxH),
+        width: Math.max(60, w),
+        height: Math.max(40, h),
       };
     });
     obstaclesRef.current = updated;
@@ -677,6 +694,7 @@ function EditorContent() {
               onTypeChange={handleTypeChange}
               obstacles={obstacles}
               onAddObstacle={handleAddObstacle}
+              onAddPresetBadge={handleAddPresetBadge}
               onRemoveObstacle={handleRemoveObstacle}
               onUpdateObstacle={handleUpdateObstacle}
               onClearObstacles={handleClearObstacles}

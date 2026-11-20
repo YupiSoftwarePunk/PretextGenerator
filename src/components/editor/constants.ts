@@ -1,5 +1,88 @@
 import { DocumentType } from '@/types';
-import { PretextObstacle } from './types';
+import { PretextObstacle, PresetBadgeTemplate } from './types';
+
+export const PRESET_BADGES: PresetBadgeTemplate[] = [
+  {
+    id: 'badge_stars',
+    kind: 'badge',
+    label: '⭐ 5.2k Stars',
+    sublabel: 'GitHub Trending',
+    theme: 'amber',
+    shape: 'rect',
+    width: 140,
+    height: 75,
+  },
+  {
+    id: 'badge_license',
+    kind: 'badge',
+    label: '🛡 MIT License',
+    sublabel: 'Open Source',
+    theme: 'emerald',
+    shape: 'rect',
+    width: 140,
+    height: 75,
+  },
+  {
+    id: 'badge_fps',
+    kind: 'badge',
+    label: '⚡ 120 FPS Flow',
+    sublabel: 'Zero DOM Reflow',
+    theme: 'violet',
+    shape: 'circle',
+    width: 110,
+    height: 110,
+  },
+  {
+    id: 'badge_react',
+    kind: 'sticker',
+    label: '⚛️ React 19',
+    sublabel: 'Full Support',
+    theme: 'cyan',
+    shape: 'circle',
+    width: 110,
+    height: 110,
+  },
+  {
+    id: 'badge_ts',
+    kind: 'badge',
+    label: '📘 TypeScript 5',
+    sublabel: 'Type-Safe Engine',
+    theme: 'indigo',
+    shape: 'rect',
+    width: 150,
+    height: 75,
+  },
+  {
+    id: 'badge_quote_tip',
+    kind: 'quote',
+    label: '💡 Про-совет',
+    sublabel: 'Используйте стикеры для акцентов',
+    theme: 'amber',
+    shape: 'rect',
+    width: 170,
+    height: 90,
+  },
+  {
+    id: 'badge_warn',
+    kind: 'callout',
+    label: '⚠️ Внимание',
+    sublabel: 'Не блокируйте основной поток',
+    theme: 'rose',
+    shape: 'rect',
+    width: 170,
+    height: 85,
+  },
+  {
+    id: 'badge_metric',
+    kind: 'metric',
+    label: '📊 0.16 ms',
+    sublabel: 'Layout Calc Latency',
+    theme: 'emerald',
+    shape: 'rect',
+    width: 140,
+    height: 75,
+  },
+];
 
 export const PRESETS: Record<DocumentType, { obstacles: Omit<PretextObstacle, 'id'>[]; text: string }> = {
   slide: {

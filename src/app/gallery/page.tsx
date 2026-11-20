@@ -37,6 +37,7 @@ import {
   subscribeToDocuments,
   setActiveDocument,
 } from '@/lib/storage';
+import { exportSlidesToPDF, exportFlashcardsToPrintPDF, exportToPNG } from '@/lib/export';
 
 const emptyDocs: Document[] = [];
 
@@ -101,6 +102,31 @@ export default function GalleryPage() {
     a.download = `${doc.title.toLowerCase().replace(/[^a-z0-9а-яё]/gi, '_')}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportDocPDF = (doc: Document) => {
+    try {
+      if (doc.type === 'card') {
+        exportFlashcardsToPrintPDF({
+          docType: 'card',
+          title: doc.title,
+          content: doc.content,
+          obstacles: doc.obstacles || [],
+          fileName: `${doc.title.toLowerCase().replace(/[^a-z0-9а-яё]/gi, '_')}.pdf`,
+        });
+      } else {
+        exportSlidesToPDF({
+          docType: doc.type,
+          title: doc.title,
+          content: doc.content,
+          obstacles: doc.obstacles || [],
+          fileName: `${doc.title.toLowerCase().replace(/[^a-z0-9а-яё]/gi, '_')}.pdf`,
+        });
+      }
+    } catch (e) {
+      console.error('PDF export failed:', e);
+      alert('Ошибка экспорта в PDF: ' + e);
+    }
   };
 
   const handleDownloadBackup = () => {
@@ -359,6 +385,14 @@ export default function GalleryPage() {
                             title="Дублировать документ"
                           >
                             <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          {/* Export PDF */}
+                          <button
+                            onClick={() => handleExportDocPDF(doc)}
+                            className="text-zinc-400 hover:text-violet-300 p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-lg hover:bg-violet-950/35 transition-colors"
+                            title="Экспорт в PDF"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
                           </button>
                           {/* Export JSON */}
                           <button

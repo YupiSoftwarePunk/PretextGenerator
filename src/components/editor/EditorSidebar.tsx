@@ -15,7 +15,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { DocumentType, Template } from '@/types';
-import { ObstacleKind, PretextObstacle, ObstacleTheme } from './types';
+import { ObstacleKind, PretextObstacle, ObstacleTheme, PresetBadgeTemplate } from './types';
+import { PRESET_BADGES } from './constants';
 import { getTemplatesByType, getReadmeTemplates } from '@/lib/templates';
 
 interface EditorSidebarProps {
@@ -23,6 +24,7 @@ interface EditorSidebarProps {
   onTypeChange: (newType: DocumentType) => void;
   obstacles: PretextObstacle[];
   onAddObstacle: (kind: ObstacleKind) => void;
+  onAddPresetBadge?: (badge: PresetBadgeTemplate) => void;
   onRemoveObstacle: (id: string) => void;
   onUpdateObstacle: (id: string, updates: Partial<PretextObstacle>) => void;
   onClearObstacles: () => void;
@@ -66,6 +68,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onTypeChange,
   obstacles,
   onAddObstacle,
+  onAddPresetBadge,
   onRemoveObstacle,
   onUpdateObstacle,
   onClearObstacles,
@@ -214,13 +217,34 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           </button>
         </div>
 
-        <button
-          onClick={() => onAddObstacle('badge')}
-          className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 border border-violet-500/40 text-xs text-violet-200 hover:bg-violet-600/40 transition-all font-mono flex items-center justify-center gap-1.5 min-h-[38px] shadow-lg shadow-violet-900/20"
-        >
-          <Palette className="w-3.5 h-3.5 text-violet-400" />
-          <span>+ Создать карточку</span>
-        </button>
+        {/* Preset Badges Library */}
+        <div className="pt-2 border-t border-white/5 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+            <span className="flex items-center gap-1 font-semibold text-zinc-300">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              Готовые бейджи и врезки:
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {PRESET_BADGES.map((presetBadge) => (
+              <button
+                key={presetBadge.id}
+                onClick={() => onAddPresetBadge && onAddPresetBadge(presetBadge)}
+                className="text-left p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-violet-500/30 transition-all font-mono group"
+                title={`Добавить бейдж "${presetBadge.label}"`}
+              >
+                <div className="text-[11px] font-bold text-zinc-200 group-hover:text-white truncate">
+                  {presetBadge.label}
+                </div>
+                {presetBadge.sublabel && (
+                  <div className="text-[9px] text-zinc-500 group-hover:text-zinc-400 truncate mt-0.5">
+                    {presetBadge.sublabel}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Obstacle List */}
         {obstacles.length > 0 && (
